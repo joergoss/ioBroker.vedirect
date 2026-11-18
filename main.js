@@ -3,6 +3,7 @@
 const utils = require('@iobroker/adapter-core');
 const { VeDirectCom } = require('./lib/veDirectCom');
 const { VE_DIRECT_FIELDS } = require('./lib/veDirect/fields');
+const { CAPABILITY_BITS, NETWORK_MODES, encodeRaw, hasCapability } = require('./lib/veDirect/hexFields');
 
 const WATCHDOG_INTERVAL_MS = 1000;
 const DATA_TIMEOUT_MS = 10000;
@@ -36,8 +37,30 @@ class Vedirect extends utils.Adapter {
         this.stateQueues = new Map();
         this.objectPromises = new Map();
         this.errorLogTimes = new Map();
+        this.hexClient = undefined;
+        this.hexReadEnabled = false;
+        this.chargerControlEnabled = false;
+        this.currentLimitControlEnabled = false;
+        this.currentLimitMax = 0;
+        this.currentLimitRefreshSeconds = 20;
+        this.externalControlSupported = undefined;
+        this.hexBootstrapPromise = undefined;
+        this.hexBootstrappedGeneration = -1;
+        this.nextHexBootstrapAt = 0;
+        this.currentLimitOperation = undefined;
+        this.currentLimitTimer = undefined;
+        this.currentLimitActive = false;
+        this.desiredCurrentLimit = undefined;
+        this.supervisorRunning = false;
         this.on('ready', this.handleReady.bind(this));
         this.on('unload', this.onUnload.bind(this));
+        this.on('stateChange', (id, state) => {
+            void this.performStateChange(id, state).catch(error => {
+                if (!this.unloaded) {
+                    this.logThrottled('VE.Direct control write failed: ', error);
+                }
+            });
+        });
     }
 
     handleReady() {
@@ -67,6 +90,44 @@ class Vedirect extends utils.Adapter {
 
         this.expireSeconds = this.nonNegativeConfig(this.config.expireTime, 'expireTime');
         this.samplingSeconds = this.nonNegativeConfig(this.config.messageBuffer, 'messageBuffer');
+        this.chargerControlEnabled = this.config.chargerControlEnabled === true;
+        this.currentLimitControlEnabled = this.config.currentLimitControlEnabled === true;
+        this.hexReadEnabled =
+            this.config.hexReadEnabled === true || this.chargerControlEnabled || this.currentLimitControlEnabled;
+        this.currentLimitMax = this.nonNegativeConfig(this.config.currentLimitMax, 'currentLimitMax');
+        this.currentLimitRefreshSeconds = this.nonNegativeConfig(
+            this.config.currentLimitRefreshSeconds === undefined ? 20 : this.config.currentLimitRefreshSeconds,
+            'currentLimitRefreshSeconds',
+        );
+        if (this.currentLimitControlEnabled && this.currentLimitMax <= 0) {
+            throw new Error('currentLimitMax must be greater than 0 when current limit control is enabled');
+        }
+        if (
+            this.currentLimitControlEnabled &&
+            (this.currentLimitRefreshSeconds < 5 || this.currentLimitRefreshSeconds > 50)
+        ) {
+            throw new Error(
+                'currentLimitRefreshSeconds must be between 5 and 50 when current limit control is enabled',
+            );
+        }
+        if (this.currentLimitMax > 0) {
+            encodeRaw('chargeCurrentLimit', this.currentLimitMax);
+        }
+        await this.initControlObjects();
+        await this.writeState('control.currentLimitActive', false);
+        if (this.hexReadEnabled) {
+            const { VeDirectHexClient } = require('./lib/veDirectHexClient');
+            this.hexClient = new VeDirectHexClient(this.com);
+            this.hexClient.onError = error => {
+                this.logThrottled('VE.Direct HEX client close error: ', error);
+                if (!this.unloaded) {
+                    void this.safeSetConnectionState(false);
+                }
+            };
+            if (this.chargerControlEnabled || this.currentLimitControlEnabled) {
+                await this.subscribeStatesAsync('control.*');
+            }
+        }
         this.serialPortPath = String(this.config.USBDevice || '').trim();
         if (!this.serialPortPath || this.serialPortPath === '/dev/xxx') {
             this.log.error('Configure a valid VE.Direct serial port before starting the adapter');
@@ -76,6 +137,7 @@ class Vedirect extends utils.Adapter {
         this.com.onValidFrame = () => {
             this.lastFrameTime = Date.now();
             void this.safeSetConnectionState(true);
+            void this.ensureHexBootstrap();
         };
         this.com.onFrame = frame => this.acceptFrame(frame);
         this.com.onError = error => this.logThrottled('VE.Direct serial error: ', error);
@@ -101,6 +163,148 @@ class Vedirect extends utils.Adapter {
             return;
         }
         await this.extendObjectAsync('info.connection', { common });
+    }
+
+    async initControlObjects() {
+        await this.setObjectNotExistsAsync('control', {
+            type: 'channel',
+            common: { name: 'Optional validated VE.Direct HEX access' },
+            native: {},
+        });
+        /** @type {Array<[string, string, ioBroker.StateCommon['type'], string, boolean, string]>} */
+        const states = [
+            ['control.capabilities', 'VE.Direct capability bits', 'number', 'value', false, ''],
+            ['control.externalControlSupported', 'External control capability', 'boolean', 'indicator', false, ''],
+            ['control.chargerOn', 'Charger soft on/off switch', 'boolean', 'switch', this.chargerControlEnabled, ''],
+            ['control.deviceState', 'Raw device operating state', 'number', 'value', false, ''],
+            ['control.remoteControlUsed', 'Remote control bit mask', 'number', 'value', false, ''],
+            ['control.networkMode', 'Decoded network mode', 'string', 'text', false, ''],
+            [
+                'control.maximumBatteryCurrent',
+                'Persistent maximum battery current',
+                'number',
+                'value.current',
+                false,
+                'A',
+            ],
+            [
+                'control.chargeCurrentLimit',
+                'Dynamically verified charge current limit',
+                'number',
+                'level.current',
+                this.currentLimitControlEnabled,
+                'A',
+            ],
+            [
+                'control.currentLimitActive',
+                'Adapter current-limit supervisor active',
+                'boolean',
+                'switch',
+                this.currentLimitControlEnabled,
+                '',
+            ],
+            [
+                'control.chargeVoltageSetpoint',
+                'Remote charge voltage setpoint (read-only)',
+                'number',
+                'value.voltage',
+                false,
+                'V',
+            ],
+            ['control.lastError', 'Last validated HEX access error', 'string', 'text', false, ''],
+        ];
+        for (const [id, name, type, role, write, unit] of states) {
+            /** @type {ioBroker.StateCommon} */
+            const common = { name, type, role, read: true, write, unit };
+            if (id === 'control.chargeCurrentLimit') {
+                common.min = 0;
+                if (this.currentLimitControlEnabled) {
+                    common.max = this.currentLimitMax;
+                }
+            }
+            await this.setObjectNotExistsAsync(id, { type: 'state', common, native: {} });
+            if (this.unloaded) {
+                return;
+            }
+            await this.extendObjectAsync(id, { common });
+        }
+    }
+
+    ensureHexBootstrap() {
+        if (!this.hexClient || this.unloaded || !this.isFresh()) {
+            return Promise.resolve();
+        }
+        const generation = this.connectionGeneration;
+        if (
+            this.hexBootstrappedGeneration === generation ||
+            this.hexBootstrapPromise ||
+            Date.now() < this.nextHexBootstrapAt
+        ) {
+            return this.hexBootstrapPromise || Promise.resolve();
+        }
+        const operation = this.refreshHexState(generation)
+            .then(() => {
+                this.hexBootstrappedGeneration = generation;
+            })
+            .catch(error => {
+                this.nextHexBootstrapAt = Date.now() + 30000;
+                if (!this.unloaded) {
+                    this.logThrottled('VE.Direct HEX bootstrap failed: ', error);
+                }
+            });
+        this.hexBootstrapPromise = operation;
+        const clear = () => {
+            if (this.hexBootstrapPromise === operation) {
+                this.hexBootstrapPromise = undefined;
+            }
+        };
+        void operation.then(clear, clear);
+        return operation;
+    }
+
+    async refreshHexState(generation = this.connectionGeneration) {
+        if (!this.hexClient || generation !== this.connectionGeneration) {
+            return;
+        }
+        const fields = [
+            ['capabilities', 'control.capabilities'],
+            ['deviceMode', 'control.chargerOn'],
+            ['deviceState', 'control.deviceState'],
+            ['remoteControlUsed', 'control.remoteControlUsed'],
+            ['networkMode', 'control.networkMode'],
+            ['maxBatteryCurrent', 'control.maximumBatteryCurrent'],
+            ['chargeCurrentLimit', 'control.chargeCurrentLimit'],
+            ['chargeVoltageSetpoint', 'control.chargeVoltageSetpoint'],
+        ];
+        const errors = [];
+        for (const [name, stateId] of fields) {
+            if (this.unloaded || generation !== this.connectionGeneration) {
+                return;
+            }
+            try {
+                const value = await this.hexClient.getField(name);
+                if (this.unloaded || generation !== this.connectionGeneration) {
+                    return;
+                }
+                await this.writeState(stateId, value);
+                if (this.unloaded || generation !== this.connectionGeneration) {
+                    return;
+                }
+                if (name === 'capabilities') {
+                    if (typeof value !== 'number') {
+                        throw new TypeError('Capabilities response is not numeric');
+                    }
+                    this.externalControlSupported = hasCapability(value, CAPABILITY_BITS.externalControl);
+                    await this.writeState('control.externalControlSupported', this.externalControlSupported);
+                }
+            } catch (error) {
+                errors.push(`${name}: ${error instanceof Error ? error.message : String(error)}`);
+                this.logThrottled(`Could not read VE.Direct HEX register ${name}: `, error);
+            }
+        }
+        if (!this.unloaded && generation === this.connectionGeneration) {
+            await this.writeState('control.lastError', errors.join('; '));
+        }
     }
 
     nonNegativeConfig(value, name) {
@@ -137,11 +341,11 @@ class Vedirect extends utils.Adapter {
         if (this.unloaded || !this.serialPortPath) {
             return;
         }
-        if (this.isFresh()) {
+        if (this.isFresh() && this.com.isOpen() && this.connectionRequested !== false) {
             return;
         }
         await this.safeSetConnectionState(false);
-        if (this.unloaded || this.isFresh()) {
+        if (this.unloaded || (this.isFresh() && this.com.isOpen() && this.connectionRequested !== false)) {
             return;
         }
         const now = Date.now();
@@ -327,10 +531,244 @@ class Vedirect extends utils.Adapter {
         return result;
     }
 
+    async performStateChange(id, state) {
+        const prefix = `${this.namespace}.control.`;
+        if (typeof id !== 'string' || !id.startsWith(prefix) || !state || state.ack !== false || state.val == null) {
+            return;
+        }
+        if (this.unloaded || !this.hexClient) {
+            return;
+        }
+        const localId = id.slice(this.namespace.length + 1);
+        const generation = this.connectionGeneration;
+        try {
+            this.assertControlSession(generation);
+            if (localId === 'control.chargerOn') {
+                if (!this.chargerControlEnabled || typeof state.val !== 'boolean') {
+                    throw new Error('Charger control is disabled or requires a strict boolean value');
+                }
+                const actual = await this.hexClient.setField('deviceMode', state.val);
+                this.assertControlSession(generation);
+                await this.writeState('control.chargerOn', actual);
+                this.assertControlSession(generation);
+                await this.writeState('control.lastError', '');
+                return;
+            }
+            if (localId === 'control.chargeCurrentLimit') {
+                if (!this.currentLimitControlEnabled) {
+                    throw new Error('Current limit control is disabled');
+                }
+                const value = this.validateCurrentLimit(state.val);
+                await this.queueCurrentLimitOperation(() => this.applyCurrentLimit(value));
+                return;
+            }
+            if (localId === 'control.currentLimitActive') {
+                if (!this.currentLimitControlEnabled || typeof state.val !== 'boolean') {
+                    throw new Error('Current limit supervisor control is disabled or requires a boolean');
+                }
+                if (state.val) {
+                    if (this.desiredCurrentLimit === undefined) {
+                        throw new Error('Set a verified charge current limit before activating the supervisor');
+                    }
+                    await this.queueCurrentLimitOperation(() => this.applyCurrentLimit(this.desiredCurrentLimit));
+                } else {
+                    await this.queueCurrentLimitOperation(() => this.stopCurrentLimit());
+                }
+            }
+        } catch (error) {
+            if (!this.unloaded) {
+                await this.writeState('control.lastError', error instanceof Error ? error.message : String(error));
+            }
+            throw error;
+        }
+    }
+
+    validateCurrentLimit(value) {
+        if (typeof value !== 'number' || !Number.isFinite(value) || value < 0 || value > this.currentLimitMax) {
+            throw new RangeError(
+                `Charge current limit must be a finite number in the range 0..${this.currentLimitMax} A`,
+            );
+        }
+        encodeRaw('chargeCurrentLimit', value);
+        return value;
+    }
+
+    assertControlSession(generation) {
+        if (this.unloaded) {
+            throw new Error('VE.Direct adapter is unloading');
+        }
+        if (
+            generation !== this.connectionGeneration ||
+            this.connectionRequested === false ||
+            !this.isFresh() ||
+            !this.com.isOpen()
+        ) {
+            throw new Error('VE.Direct control requires fresh valid TEXT data and an unchanged open session');
+        }
+    }
+
+    async ensureExternalControlCapability(generation = this.connectionGeneration) {
+        this.assertControlSession(generation);
+        if (this.externalControlSupported === undefined) {
+            if (!this.hexClient) {
+                throw new Error('HEX client is not available');
+            }
+            const capabilities = await this.hexClient.getField('capabilities');
+            this.assertControlSession(generation);
+            if (typeof capabilities !== 'number') {
+                throw new TypeError('Capabilities response is not numeric');
+            }
+            this.externalControlSupported = hasCapability(capabilities, CAPABILITY_BITS.externalControl);
+            await this.writeState('control.capabilities', capabilities);
+            this.assertControlSession(generation);
+            await this.writeState('control.externalControlSupported', this.externalControlSupported);
+            this.assertControlSession(generation);
+        }
+        if (!this.externalControlSupported) {
+            throw new Error('The connected device does not advertise external-control support');
+        }
+    }
+
+    queueCurrentLimitOperation(operation) {
+        if (this.currentLimitOperation) {
+            return Promise.reject(new Error('Another VE.Direct current-limit operation is still pending'));
+        }
+        const result = Promise.resolve().then(operation);
+        this.currentLimitOperation = result;
+        const clear = () => {
+            if (this.currentLimitOperation === result) {
+                this.currentLimitOperation = undefined;
+            }
+        };
+        void result.then(clear, clear);
+        return result;
+    }
+
+    async applyCurrentLimit(value, restartTimer = true) {
+        this.validateCurrentLimit(value);
+        if (!this.hexClient) {
+            throw new Error('HEX client is not available');
+        }
+        const generation = this.connectionGeneration;
+        this.assertControlSession(generation);
+        const client = this.hexClient;
+        await this.ensureExternalControlCapability(generation);
+        this.assertControlSession(generation);
+        const mode = await client.setField('networkMode', NETWORK_MODES.external);
+        this.assertControlSession(generation);
+        if (mode !== 'external') {
+            throw new Error(`Network mode readback is ${String(mode)}, expected external`);
+        }
+        await this.writeState('control.networkMode', mode);
+        this.assertControlSession(generation);
+        const actual = await client.setField('chargeCurrentLimit', value);
+        this.assertControlSession(generation);
+        if (typeof actual !== 'number' || actual !== value) {
+            throw new Error(`Charge current readback ${actual} A differs from requested ${value} A`);
+        }
+        await this.writeState('control.chargeCurrentLimit', actual);
+        this.assertControlSession(generation);
+        this.desiredCurrentLimit = actual;
+        this.currentLimitActive = true;
+        if (restartTimer) {
+            this.startCurrentLimitSupervisor();
+        }
+        await this.writeState('control.currentLimitActive', true);
+        this.assertControlSession(generation);
+        await this.writeState('control.lastError', '');
+    }
+
+    startCurrentLimitSupervisor() {
+        if (this.unloaded || !this.currentLimitActive) {
+            return;
+        }
+        if (this.currentLimitTimer) {
+            clearInterval(this.currentLimitTimer);
+        }
+        this.currentLimitTimer = setInterval(
+            () => void this.runCurrentLimitSupervisor(),
+            this.currentLimitRefreshSeconds * 1000,
+        );
+    }
+
+    async runCurrentLimitSupervisor() {
+        if (
+            this.supervisorRunning ||
+            !this.currentLimitActive ||
+            this.desiredCurrentLimit === undefined ||
+            this.unloaded
+        ) {
+            return;
+        }
+        this.supervisorRunning = true;
+        const desiredCurrentLimit = this.desiredCurrentLimit;
+        try {
+            if (!this.isFresh() || !this.hexClient) {
+                return;
+            }
+            await this.queueCurrentLimitOperation(() => this.applyCurrentLimit(desiredCurrentLimit, false));
+        } catch (error) {
+            if (!this.unloaded) {
+                await this.writeState('control.lastError', error instanceof Error ? error.message : String(error));
+                this.logThrottled('Could not refresh VE.Direct charge current limit: ', error);
+            }
+        } finally {
+            this.supervisorRunning = false;
+        }
+    }
+
+    async stopCurrentLimit() {
+        if (this.currentLimitTimer) {
+            clearInterval(this.currentLimitTimer);
+            this.currentLimitTimer = undefined;
+        }
+        this.currentLimitActive = false;
+        if (this.unloaded) {
+            return;
+        }
+        const generation = this.connectionGeneration;
+        let failure;
+        try {
+            if (!this.hexClient) {
+                throw new Error('HEX client is not available');
+            }
+            this.assertControlSession(generation);
+            const mode = await this.hexClient.setField('networkMode', NETWORK_MODES.standalone);
+            this.assertControlSession(generation);
+            if (mode !== 'standalone') {
+                throw new Error(`Network mode readback is ${String(mode)}, expected standalone`);
+            }
+            await this.writeState('control.networkMode', mode);
+            await this.writeState('control.lastError', '');
+        } catch (error) {
+            failure = error;
+            await this.writeState('control.lastError', error instanceof Error ? error.message : String(error));
+        }
+        await this.writeState('control.currentLimitActive', false);
+        if (failure) {
+            throw failure;
+        }
+    }
+
     async safeSetConnectionState(connected) {
         if (!connected) {
             this.clearPendingSample();
             this.pendingFrameBatch = null;
+            const supervisorWasActive = this.currentLimitActive || this.currentLimitTimer !== undefined;
+            if (this.currentLimitTimer) {
+                clearInterval(this.currentLimitTimer);
+                this.currentLimitTimer = undefined;
+            }
+            this.currentLimitActive = false;
+            this.desiredCurrentLimit = undefined;
+            this.hexBootstrappedGeneration = -1;
+            this.externalControlSupported = undefined;
+            if (this.hexClient) {
+                this.hexClient.cancel(new Error('VE.Direct connection lost'));
+            }
+            if (supervisorWasActive) {
+                await this.writeState('control.currentLimitActive', false);
+            }
             if (this.connectionRequested !== false) {
                 this.connectionGeneration++;
             }
@@ -374,8 +812,18 @@ class Vedirect extends utils.Adapter {
         }
         this.clearPendingSample();
         this.pendingFrameBatch = null;
+        if (this.currentLimitTimer) {
+            clearInterval(this.currentLimitTimer);
+            this.currentLimitTimer = undefined;
+        }
+        this.currentLimitActive = false;
+        if (this.hexClient) {
+            this.hexClient.cancel(new Error('VE.Direct adapter is unloading'));
+        }
         this.com.onFrame = undefined;
         this.com.onValidFrame = undefined;
+        this.com.onHexMessage = undefined;
+        this.com.onPortClosed = undefined;
         const operation = this.performUnload(this.activeWatchDog, this.readyPromise);
         this.unloadPromise = operation;
         let unloadCallbackInvoked = false;
@@ -403,7 +851,14 @@ class Vedirect extends utils.Adapter {
         if (pendingReady) {
             pending.push(pendingReady.catch(() => undefined));
         }
+        if (this.hexBootstrapPromise) {
+            pending.push(this.hexBootstrapPromise.catch(() => undefined));
+        }
+        if (this.currentLimitOperation) {
+            pending.push(this.currentLimitOperation.catch(() => undefined));
+        }
         await this.settleWithin(Promise.all(pending), deadline);
+        await this.settleWithin(this.writeState('control.currentLimitActive', false), deadline);
         await this.settleWithin(this.safeSetConnectionState(false), deadline);
         await this.settleWithin(Promise.all([...this.stateQueues.values(), this.frameQueue]), deadline);
     }

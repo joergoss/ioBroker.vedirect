@@ -24,11 +24,8 @@ function makeRawFrame(bodyText) {
     return Buffer.concat([body, Buffer.from([(256 - sum) & 0xff])]);
 }
 
-function makeFrameWithChecksum(target) {
-    const empty = makeFrame([
-        ['V', '13118'],
-        ['X_PAD', ''],
-    ]);
+function makeFrameWithChecksum(target, fields = [['V', '13118']]) {
+    const empty = makeFrame([...fields, ['X_PAD', '']]);
     const required = (empty[empty.length - 1] - target) & 0xff;
     const buildPadding = (sum, length) => {
         if (length === 0) {
@@ -53,10 +50,7 @@ function makeFrameWithChecksum(target) {
         for (let sum = required; sum <= 126 * length; sum += 256) {
             const padding = buildPadding(sum, length);
             if (padding !== undefined) {
-                return makeFrame([
-                    ['V', '13118'],
-                    ['X_PAD', padding],
-                ]);
+                return makeFrame([...fields, ['X_PAD', padding]]);
             }
         }
     }
@@ -187,27 +181,181 @@ describe('VE.Direct byte parser', () => {
         const frame = makeFrame(officialFields);
         const next = makeFrame([['I', '1000']]);
         for (const position of [0, 20, Math.floor(frame.length / 2), frame.length - 1, frame.length]) {
-            const parser = new VeDirectParser();
-            const frames = collect(parser);
             const withHex = Buffer.concat([
                 frame.subarray(0, position),
                 Buffer.from(':A1234\n'),
                 frame.subarray(position),
                 next,
             ]);
-            parser.receive(withHex);
-            if (position === 0 || position === frame.length) {
-                expect(
-                    frames.some(item => item.V === 26.201),
-                    `HEX outside TEXT at ${position}`,
-                ).to.equal(true);
-            } else {
-                expect(
-                    frames.some(item => item.V !== undefined),
-                    `interrupted TEXT at ${position}`,
-                ).to.equal(false);
+            for (let split = 0; split <= withHex.length; split++) {
+                const parser = new VeDirectParser();
+                const frames = collect(parser);
+                parser.receive(withHex.subarray(0, split));
+                parser.receive(withHex.subarray(split));
+                const expected = position === 0 || position === frame.length ? [officialDecoded, { I: 1 }] : [{ I: 1 }];
+                expect(frames, `HEX at ${position}, split ${split}`).to.deep.equal(expected);
             }
-            expect(frames[frames.length - 1], `next block after HEX at ${position}`).to.deep.equal({ I: 1 });
+        }
+    });
+
+    it('accepts a complete block immediately after HEX without an old TEXT remainder at every split', () => {
+        const interrupted = makeFrame(officialFields);
+        const prefix = interrupted.subarray(0, 12);
+        expect(prefix.reduce((sum, byte) => (sum + byte) & 0xff, 0)).not.to.equal(0);
+        const hex = Buffer.from(':A0102000543\n', 'ascii');
+        const stream = Buffer.concat([prefix, hex, makeFrame([['I', '1000']])]);
+        const following = makeFrame([['V', '13118']]);
+
+        for (let split = 0; split <= stream.length; split++) {
+            const parser = new VeDirectParser();
+            const frames = collect(parser);
+            const messages = [];
+            let validFrames = 0;
+            parser.onHexMessage = message => messages.push(message);
+            parser.onValidFrame = () => validFrames++;
+
+            parser.receive(stream.subarray(0, split));
+            parser.receive(stream.subarray(split));
+
+            expect(frames, `split ${split}`).to.deep.equal([{ I: 1 }]);
+            expect(validFrames, `split ${split}`).to.equal(1);
+            expect(messages, `split ${split}`).to.have.lengthOf(1);
+            expect(messages[0].equals(hex), `split ${split}`).to.equal(true);
+            expect(parser.checksumErrors, `split ${split}`).to.equal(0);
+            expect(parser.invalidFrames, `split ${split}`).to.equal(0);
+
+            parser.receive(following);
+            expect(frames, `following block at split ${split}`).to.deep.equal([{ I: 1 }, { V: 13.118 }]);
+            expect(validFrames, `following block at split ${split}`).to.equal(2);
+        }
+    });
+
+    it('withholds an ambiguous fresh block after a zero-sum prefix and recovers on later blocks', () => {
+        const prefix = Buffer.from('\r\nFW\tC', 'ascii');
+        expect(prefix.reduce((sum, byte) => (sum + byte) & 0xff, 0)).to.equal(0);
+        const stream = Buffer.concat([
+            prefix,
+            Buffer.from(':A0102000543\n', 'ascii'),
+            makeFrame([['I', '1000']]),
+            makeFrame([['V', '13118']]),
+            makeFrame([
+                ['H4', '3'],
+                ['H5', '1'],
+            ]),
+        ]);
+
+        for (let split = 0; split <= stream.length; split++) {
+            const parser = new VeDirectParser();
+            const frames = collect(parser);
+            let validFrames = 0;
+            parser.onValidFrame = () => validFrames++;
+            parser.receive(stream.subarray(0, split));
+            parser.receive(stream.subarray(split));
+
+            expect(frames, `split ${split}`).to.deep.equal([{ V: 13.118 }, { H4: 3, H5: 1 }]);
+            expect(validFrames, `split ${split}`).to.equal(2);
+        }
+    });
+
+    it('discards classic TEXT remainders after HEX for zero-sum and nonzero prefixes at every split', () => {
+        const hex = Buffer.from(':A0102000543\n', 'ascii');
+        const next = makeFrame([['I', '1000']]);
+        const following = Buffer.concat([
+            makeFrame([['V', '13118']]),
+            makeFrame([
+                ['H4', '3'],
+                ['H5', '1'],
+            ]),
+        ]);
+
+        for (const firmware of ['C', 'D']) {
+            const prefixText = `\r\nFW\t${firmware}`;
+            const interrupted = makeRawFrame(`${prefixText}\r\nV\t13118\r\nChecksum\t`);
+            const prefixLength = Buffer.byteLength(prefixText, 'ascii');
+            const prefix = interrupted.subarray(0, prefixLength);
+            const prefixSum = prefix.reduce((sum, byte) => (sum + byte) & 0xff, 0);
+            expect(prefixSum).to.equal(firmware === 'C' ? 0 : 1);
+            const stream = Buffer.concat([prefix, hex, interrupted.subarray(prefixLength), next]);
+
+            for (let split = 0; split <= stream.length; split++) {
+                const parser = new VeDirectParser();
+                const frames = collect(parser);
+                let validFrames = 0;
+                parser.onValidFrame = () => validFrames++;
+                parser.receive(stream.subarray(0, split));
+                parser.receive(stream.subarray(split));
+
+                expect(frames, `firmware ${firmware}, split ${split}`).to.deep.equal([{ I: 1 }]);
+                expect(validFrames, `firmware ${firmware}, split ${split}`).to.equal(1);
+
+                parser.receive(following);
+                expect(frames, `following blocks, firmware ${firmware}, split ${split}`).to.deep.equal([
+                    { I: 1 },
+                    { V: 13.118 },
+                    { H4: 3, H5: 1 },
+                ]);
+                expect(validFrames, `following blocks, firmware ${firmware}, split ${split}`).to.equal(3);
+            }
+        }
+    });
+
+    it('recovers after every orphaned checksum byte in an ambiguous HEX remainder at every split', () => {
+        const prefix = Buffer.from('\r\nFW\tC', 'ascii');
+        const hex = Buffer.from(':A0102000543\n', 'ascii');
+        const next = makeFrame([['I', '1000']]);
+
+        for (let orphan = 0; orphan <= 0xff; orphan++) {
+            const interrupted = makeFrameWithChecksum(orphan, [
+                ['FW', 'C'],
+                ['V', '13118'],
+            ]);
+            expect(interrupted[interrupted.length - 1], `fixture ${orphan}`).to.equal(orphan);
+            expect(interrupted.subarray(0, prefix.length).equals(prefix), `prefix ${orphan}`).to.equal(true);
+            const stream = Buffer.concat([prefix, hex, interrupted.subarray(prefix.length), next]);
+
+            for (let split = 0; split <= stream.length; split++) {
+                const parser = new VeDirectParser();
+                const frames = collect(parser);
+                let validFrames = 0;
+                parser.onValidFrame = () => validFrames++;
+                parser.receive(stream.subarray(0, split));
+                parser.receive(stream.subarray(split));
+
+                expect(frames, `orphan ${orphan}, split ${split}`).to.deep.equal([{ I: 1 }]);
+                expect(validFrames, `orphan ${orphan}, split ${split}`).to.equal(1);
+            }
+        }
+    });
+
+    it('does not rehabilitate malformed or garbage blocks after zero-sum and nonzero HEX interruptions', () => {
+        const interruptedPrefixes = [
+            ['nonzero', makeFrame(officialFields).subarray(0, 12)],
+            ['zero-sum', Buffer.from('\r\nFW\tC', 'ascii')],
+        ];
+        const hex = Buffer.from(':A0102000543\n', 'ascii');
+        const vectors = [
+            makeRawFrame('\r\nk~\r\nV\t13118\r\nChecksum\t'),
+            makeRawFrame('\r\nV\t0x3336\r\nX_PAD\tP\r\n\r\nV\t13118\r\nChecksum\t'),
+            makeRawFrame(`\r\n${'A'.repeat(128)}i\r\nV\t13118\r\nChecksum\t`),
+            makeRawFrame('X\nV\t0x3336\r\nX_PAD\tPPe\r\n\r\nV\t13118\r\nChecksum\t'),
+        ];
+        const next = makeFrame([['I', '1000']]);
+
+        for (const [prefixName, interrupted] of interruptedPrefixes) {
+            for (const [vectorIndex, invalid] of vectors.entries()) {
+                const stream = Buffer.concat([interrupted, hex, invalid, next]);
+                for (let split = 0; split <= stream.length; split++) {
+                    const parser = new VeDirectParser();
+                    const frames = collect(parser);
+                    let validFrames = 0;
+                    parser.onValidFrame = () => validFrames++;
+                    parser.receive(stream.subarray(0, split));
+                    parser.receive(stream.subarray(split));
+                    const context = `${prefixName}, vector ${vectorIndex}, split ${split}`;
+                    expect(frames, context).to.deep.equal([{ I: 1 }]);
+                    expect(validFrames, context).to.equal(1);
+                }
+            }
         }
     });
 
@@ -232,6 +380,54 @@ describe('VE.Direct byte parser', () => {
         parser.receive(Buffer.concat([Buffer.from(':A1\n:A2\n'), frame, Buffer.from(':A3\n'), frame]));
         expect(frames).to.deep.equal([{ V: 13.118 }, { V: 13.118 }]);
         expect(parser.hexMessages).to.equal(3);
+    });
+
+    it('emits complete HEX frames byte-exactly at every chunk boundary', () => {
+        const stream = Buffer.from(':A1234\n:7014020000AA\n', 'ascii');
+        for (let split = 0; split <= stream.length; split++) {
+            const parser = new VeDirectParser();
+            const messages = [];
+            parser.onHexMessage = message => messages.push(message);
+            parser.receive(stream.subarray(0, split));
+            parser.receive(stream.subarray(split));
+            expect(messages).to.have.lengthOf(2);
+            expect(messages[0].equals(Buffer.from(':A1234\n'))).to.equal(true);
+            expect(messages[1].equals(Buffer.from(':7014020000AA\n'))).to.equal(true);
+        }
+    });
+
+    it('emits HEX frames with arbitrary binary bytes without UTF-8 conversion', () => {
+        const source = Buffer.from([0x3a, 0x41, 0x00, 0xff, 0x80, 0x0a]);
+        const parser = new VeDirectParser();
+        let received;
+        parser.onHexMessage = message => (received = message);
+        for (const byte of source) {
+            parser.receive(Buffer.from([byte]));
+        }
+        expect(received.equals(source)).to.equal(true);
+    });
+
+    it('bounds oversized HEX messages and recovers on the next TEXT frame', () => {
+        const parser = new VeDirectParser();
+        const messages = [];
+        const frames = collect(parser);
+        parser.onHexMessage = message => messages.push(message);
+        parser.receive(Buffer.concat([Buffer.from(`:A${'1'.repeat(300)}\n`), makeFrame([['V', '13118']])]));
+        expect(messages).to.have.lengthOf(0);
+        expect(parser.invalidHexMessages).to.equal(1);
+        expect(frames).to.deep.equal([{ V: 13.118 }]);
+    });
+
+    it('resets HEX state before propagating a callback failure', () => {
+        const parser = new VeDirectParser();
+        parser.onHexMessage = () => {
+            throw new Error('HEX callback failure');
+        };
+        expect(() => parser.receive(Buffer.from(':A1\n'))).to.throw('HEX callback failure');
+        parser.onHexMessage = undefined;
+        const frames = collect(parser);
+        parser.receive(makeFrame([['I', '1000']]));
+        expect(frames).to.deep.equal([{ I: 1 }]);
     });
 
     it('gives CHECKSUM priority over a 0x3A byte at every chunk boundary', () => {
