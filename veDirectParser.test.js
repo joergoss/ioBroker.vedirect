@@ -234,6 +234,54 @@ describe('VE.Direct byte parser', () => {
         expect(parser.hexMessages).to.equal(3);
     });
 
+    it('emits complete HEX frames byte-exactly at every chunk boundary', () => {
+        const stream = Buffer.from(':A1234\n:7014020000AA\n', 'ascii');
+        for (let split = 0; split <= stream.length; split++) {
+            const parser = new VeDirectParser();
+            const messages = [];
+            parser.onHexMessage = message => messages.push(message);
+            parser.receive(stream.subarray(0, split));
+            parser.receive(stream.subarray(split));
+            expect(messages).to.have.lengthOf(2);
+            expect(messages[0].equals(Buffer.from(':A1234\n'))).to.equal(true);
+            expect(messages[1].equals(Buffer.from(':7014020000AA\n'))).to.equal(true);
+        }
+    });
+
+    it('emits HEX frames with arbitrary binary bytes without UTF-8 conversion', () => {
+        const source = Buffer.from([0x3a, 0x41, 0x00, 0xff, 0x80, 0x0a]);
+        const parser = new VeDirectParser();
+        let received;
+        parser.onHexMessage = message => (received = message);
+        for (const byte of source) {
+            parser.receive(Buffer.from([byte]));
+        }
+        expect(received.equals(source)).to.equal(true);
+    });
+
+    it('bounds oversized HEX messages and recovers on the next TEXT frame', () => {
+        const parser = new VeDirectParser();
+        const messages = [];
+        const frames = collect(parser);
+        parser.onHexMessage = message => messages.push(message);
+        parser.receive(Buffer.concat([Buffer.from(`:A${'1'.repeat(300)}\n`), makeFrame([['V', '13118']])]));
+        expect(messages).to.have.lengthOf(0);
+        expect(parser.invalidHexMessages).to.equal(1);
+        expect(frames).to.deep.equal([{ V: 13.118 }]);
+    });
+
+    it('resets HEX state before propagating a callback failure', () => {
+        const parser = new VeDirectParser();
+        parser.onHexMessage = () => {
+            throw new Error('HEX callback failure');
+        };
+        expect(() => parser.receive(Buffer.from(':A1\n'))).to.throw('HEX callback failure');
+        parser.onHexMessage = undefined;
+        const frames = collect(parser);
+        parser.receive(makeFrame([['I', '1000']]));
+        expect(frames).to.deep.equal([{ I: 1 }]);
+    });
+
     it('gives CHECKSUM priority over a 0x3A byte at every chunk boundary', () => {
         const frame = makeFrameWithChecksum(0x3a);
         const next = makeFrame([['I', '1000']]);

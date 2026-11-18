@@ -109,8 +109,8 @@
       "zh-cn": "Vedirect"
     },
     "desc": {
-      "en": "Robust read-only VE.Direct data from Victron devices",
-      "de": "Robuste Read-only-VE.Direct-Daten von Victron-Geräten",
+      "en": "Robust VE.Direct monitoring with optional validated SmartSolar control",
+      "de": "Robustes VE.Direct-Monitoring mit optional validierter SmartSolar-Steuerung",
       "ru": "Считайте данные VE.direct с Victron Solar Chargers.",
       "pt": "Leia os dados VE.direct dos Victron Solar Chargers",
       "nl": "Lees VE.direct-gegevens van Victron Solar Chargers",
@@ -170,7 +170,12 @@
     "byUSB": true,
     "USBDevice": "",
     "expireTime": 0,
-    "messageBuffer": 0
+    "messageBuffer": 0,
+    "hexReadEnabled": false,
+    "chargerControlEnabled": false,
+    "currentLimitControlEnabled": false,
+    "currentLimitMax": 0,
+    "currentLimitRefreshSeconds": 20
   },
   "objects": [],
   "instanceObjects": [

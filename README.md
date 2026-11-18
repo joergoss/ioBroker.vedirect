@@ -4,7 +4,7 @@
 
 [![Test and Release](https://github.com/joergoss/ioBroker.vedirect/actions/workflows/test-and-release.yml/badge.svg)](https://github.com/joergoss/ioBroker.vedirect/actions/workflows/test-and-release.yml)
 
-Read-only ioBroker-Adapter für Victron-Geräte mit serieller VE.Direct-Schnittstelle. Dieses Repository ist ein Fork von [DrozmotiX/ioBroker.vedirect](https://github.com/DrozmotiX/ioBroker.vedirect) und enthält eine grundlegende Protokoll- und Lifecycle-Härtung.
+Standardmäßig read-only ioBroker-Adapter für Victron-Geräte mit serieller VE.Direct-Schnittstelle. Optional unterstützt er strikt validierte HEX-Gets sowie einzeln freischaltbare SmartSolar-Steuerfunktionen. Dieses Repository ist ein Fork von [DrozmotiX/ioBroker.vedirect](https://github.com/DrozmotiX/ioBroker.vedirect) und enthält eine grundlegende Protokoll- und Lifecycle-Härtung.
 
 ## Funktionen
 
@@ -18,12 +18,14 @@ Read-only ioBroker-Adapter für Victron-Geräte mit serieller VE.Direct-Schnitts
 - Objekt-Migration vor State-Schreiben sowie behandelte Promise-Fehler.
 - Frame-Sampling ohne Verlust einzelner Protokollfelder.
 - Mehrinstanzfähigkeit ohne globale Ports, Parser, Timer oder Buffer.
+- Optionaler HEX-Get-Zugriff mit Rev.-18-Checksumme, exakter Response-Zuordnung und fester Registerwhitelist.
+- Optionaler Charger-on/off- und dynamischer Charge-Current-Control mit Read-after-Write, Sicherheitsgrenzen und instanzgebundenem Refresh-Supervisor.
 
 ## Unterstützte Geräte und Umfang
 
 Die Feldregistry deckt die im bisherigen Adapter enthaltenen BMV-, MPPT-, Phoenix- und Orion-Felder ab, einschließlich SmartSolar-, SmartShunt- und VE.Direct-Phoenix-Daten. Die tatsächliche Feldverfügbarkeit hängt von Produkt und Firmware ab.
 
-Der Adapter bleibt **read-only**. HEX-`Get`/`Set`-Steuerung, etwa Charge-Current-Limits oder Relaissteuerung, ist nicht Bestandteil dieser Überarbeitung.
+Der Adapter bleibt standardmäßig **read-only**. HEX-Gets und die Steuerfunktionen sind einzeln deaktiviert vorkonfiguriert. Es gibt keine allgemeine Roh-Register-, BMS-/Slave-, Spannungs- oder persistente Batterieeinstellungs-Steuerung. Details und Sicherheitsgrenzen stehen in [docs/hex-control.md](docs/hex-control.md).
 
 Offizielle Referenzen:
 
@@ -55,6 +57,14 @@ Der bisherige Konfigurationsname bleibt aus Kompatibilitätsgründen erhalten, d
 - Liveness und Reconnect werden durch Sampling nicht gedrosselt.
 - Bei erkanntem Verbindungsverlust wird ein noch nicht veröffentlichter Sample-Puffer verworfen; nach einem Reconnect beginnt ein neuer Puffer, sodass keine Werte über Verbindungsgrenzen hinweg vermischt werden.
 - Es werden keine einzelnen Zeilen oder History-Blöcke mehr verworfen.
+
+### Optionaler HEX-Zugriff
+
+Alle HEX-Funktionen sind standardmäßig deaktiviert. `hexReadEnabled` erlaubt ausschließlich eine feste Whitelist von Registerabfragen. `chargerControlEnabled` und `currentLimitControlEnabled` schalten die jeweiligen `control.*`-States separat frei.
+
+Die Stromsteuerung benötigt zusätzlich `currentLimitMax` als Adapter-Sicherheitsobergrenze und erneuert External-Control-Modus und Limit alle `currentLimitRefreshSeconds` (5–50 Sekunden) mit Read-after-Write. Ein Kommunikationsverlust ist **kein Fail-safe-Off**: Das Gerät kann auf Stand-alone und sein persistentes Maximalstrom-Setting zurückfallen.
+
+Siehe [docs/hex-control.md](docs/hex-control.md) für States, Transaktionssemantik und das read-only Diagnoseprogramm.
 
 ## Verbindungs- und Fehlerverhalten
 
@@ -111,6 +121,12 @@ Der vollständige Audit steht in [docs/audit-2026-11-17.md](docs/audit-2026-11-1
 Der Produktions-Audit ist ohne Befund. Im Entwicklungs-Toolchain-Audit verbleibt eine transitive `picomatch`-ReDoS-Meldung über `tinyglobby`/TypeScript-ESLint, für die zum Prüfzeitpunkt keine korrigierte kompatible Release-Kette verfügbar ist. Sie betrifft ausschließlich Entwicklungs-Globbing mit potenziell bösartigen Patterns, nicht den Adapterbetrieb oder die VE.Direct-Verarbeitung.
 
 ## Changelog
+### **WORK IN PROGRESS**
+
+- (joerg) Optionaler HEX-Get-Client mit offiziellen Rev.-18-Fixtures, strenger Register-/Response-Prüfung und read-only Hardwareprobe.
+- (joerg) Optionaler Charger-on/off- und dynamischer Charge-Current-Control mit Read-after-Write, Capability-Gate und begrenzten Queues.
+- (joerg) Instanzgebundener Stromlimit-Supervisor, Session-Invalidierung ohne blindes Retry sowie umfangreiche Fake-/Serial-/Zwei-Instanz-Tests.
+
 ### 0.4.0 (2026-11-18)
 
 - (joerg) Atomarer VE.Direct-3.34-Parser mit Checksum-, HEX-, Multiblock- und Recovery-Tests (#1).
