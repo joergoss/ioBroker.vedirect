@@ -1031,10 +1031,17 @@ describe('VE.Direct validated HEX adapter integration', () => {
     it('cancels HEX operations on disconnect and unload without a final Set', async () => {
         const adapter = make();
         adapter.currentLimitActive = true;
+        adapter.desiredCurrentLimit = 10;
         adapter.currentLimitTimer = setInterval(() => undefined, 10000);
         await adapter.safeSetConnectionState(false);
         expect(adapter.hexClient.cancel.calledOnce).to.equal(true);
+        expect(adapter.currentLimitActive).to.equal(false);
+        expect(adapter.currentLimitTimer).to.equal(undefined);
+        expect(adapter.desiredCurrentLimit).to.equal(undefined);
         expect(adapter.externalControlSupported).to.equal(undefined);
+        adapter.lastFrameTime = Date.now();
+        await adapter.runCurrentLimitSupervisor();
+        expect(adapter.hexClient.setField.called).to.equal(false);
 
         const callback = sinon.stub();
         adapter.onUnload(callback);

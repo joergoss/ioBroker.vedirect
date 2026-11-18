@@ -83,7 +83,7 @@ Anschließend startet der lokale Supervisor und erneuert beide Werte samt Readba
 
 `control.currentLimitActive=false` stoppt den lokalen Timer und versucht Network Mode Standalone (`0`) mit Readback. Schlägt dieser Zugriff fehl, bleibt der lokale Supervisor dennoch aus; `control.lastError` zeigt den Fehler und das Gerät kann bis zu seinem Protokolltimeout weiter extern gesteuert sein.
 
-Beim Adapter-Unload werden keine zusätzlichen Geräte-Sets gesendet. Nach einem Neustart aktiviert sich der Supervisor nicht automatisch; ein vorheriger Wert muss erneut bestätigt werden.
+Beim Adapter-Unload werden keine zusätzlichen Geräte-Sets gesendet. Nach einem Neustart **oder Verbindungsverlust** aktiviert sich der Supervisor nicht automatisch wieder. Timer und bestätigter Sollwert werden verworfen; eine neue Stromvorgabe muss ausdrücklich bestätigt werden.
 
 ### Fallback ist keine Abschaltung
 
