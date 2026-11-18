@@ -369,6 +369,16 @@ describe('VE.Direct watchdog and parser integration', () => {
         expect(adapter.connectionState).to.equal(false);
     });
 
+    it('forces reconnect of a freshly streaming but invalidated HEX session', async () => {
+        const adapter = harness();
+        adapter.lastFrameTime = Date.now();
+        adapter.connectionRequested = false;
+        adapter.com.isOpen.returns(true);
+        await adapter.watchDog();
+        expect(adapter.com.close.calledOnce).to.equal(true);
+        expect(adapter.com.open.calledOnce).to.equal(true);
+    });
+
     it('closes and reopens a stale open port', async () => {
         const adapter = harness();
         adapter.com.isOpen.returns(true);
