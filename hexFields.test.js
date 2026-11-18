@@ -79,7 +79,7 @@ describe('VE.Direct HEX field registry', () => {
     it('exports stable capability, device-mode, network-mode and flag constants', () => {
         expect(CAPABILITY_BITS).to.deep.equal({ externalControl: 15 });
         expect(DEVICE_MODE_VALUES).to.deep.equal({ offLegacy: 0, on: 1, off: 4 });
-        expect(NETWORK_MODES).to.deep.equal({ standalone: 0, slave: 3, external: 5, bms: 9 });
+        expect(NETWORK_MODES).to.deep.equal({ standalone: 0, slave: 3, external: 5, bms: 9, chargeMaster: 0x21 });
         expect(REGISTER_ERROR_FLAGS).to.deep.equal({ unknownId: 1, notSupported: 2, parameterError: 4 });
         expect(HEX_FIELDS.capabilities.values).to.equal(CAPABILITY_BITS);
         expect(HEX_FIELDS.deviceMode.values).to.equal(DEVICE_MODE_VALUES);
@@ -209,9 +209,10 @@ describe('VE.Direct HEX network mode', () => {
         expect(encodeRaw('networkMode', 5)).to.deep.equal(bytes(5));
     });
 
-    it('rejects slave and BMS for writing although both are decodable', () => {
-        expect(() => encodeRaw('networkMode', 3)).to.throw(/only standalone/);
-        expect(() => encodeRaw('networkMode', 9)).to.throw(/only standalone/);
+    it('rejects slave, BMS and read-only Charge Master for writing although all are decodable', () => {
+        expect(() => encodeRaw('networkMode', NETWORK_MODES.slave)).to.throw(/only standalone/);
+        expect(() => encodeRaw('networkMode', NETWORK_MODES.bms)).to.throw(/only standalone/);
+        expect(() => encodeRaw('networkMode', NETWORK_MODES.chargeMaster)).to.throw(/only standalone/);
     });
 
     it('rejects undocumented modes, overflow and enum coercion for writing', () => {
@@ -225,6 +226,7 @@ describe('VE.Direct HEX network mode', () => {
         [3, 'slave'],
         [5, 'external'],
         [9, 'bms'],
+        [0x21, 'chargeMaster'],
     ];
     for (const [raw, expected] of fixtures) {
         it(`decodes documented raw mode ${raw} as ${expected}`, () => {
@@ -234,10 +236,10 @@ describe('VE.Direct HEX network mode', () => {
     }
 
     it('rejects unknown network modes instead of silently passing them through', () => {
-        for (const raw of [1, 2, 4, 6, 8, 33, 255, -1, 256, 1.5, '5', null]) {
+        for (const raw of [1, 2, 4, 6, 8, 10, 34, 255, -1, 256, 1.5, '5', null]) {
             expect(() => decodeNetworkMode(raw), String(raw)).to.throw();
         }
-        expect(() => decodeRaw('networkMode', bytes(33))).to.throw(/Unknown networkMode/);
+        expect(() => decodeRaw('networkMode', bytes(34))).to.throw(/Unknown networkMode/);
     });
 });
 
