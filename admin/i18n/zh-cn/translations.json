@@ -1,14 +1,14 @@
 {
+    "Current control safety cap (A)": "电流控制安全上限（A）",
+    "Current limit refresh interval (seconds)": "电流限制刷新间隔（秒）",
+    "Enable charger on/off control": "启用充电器开/关控制",
+    "Enable dynamic charge current control": "启用充电电流动态控制",
+    "Enable read-only HEX register queries": "启用 HEX 寄存器只读查询",
+    "Frame sampling interval (seconds)": "帧采样间隔（秒）",
+    "HEX access is disabled by default. Control functions change charger behaviour and require separate validation.": "默认禁用 HEX 访问。控制功能会改变充电器的行为，需要单独验证。",
     "Leave empty or 0 to not expire states": "留空或 0 表示不过期状态",
+    "Loss of external control returns the charger to stand-alone operation and its persistent maximum current; it is not a fail-safe shutdown.": "外部控制丢失后，充电器会恢复独立运行，并采用持久保存的最大电流；这并非故障安全关断。",
     "Please choose your preferred settings": "请选择您喜欢的设置",
-    "VE.Direct serial port": "VE.Direct serial port",
-    "State expiration (seconds)": "State expiration (seconds)",
-    "Frame sampling interval (seconds)": "Frame sampling interval (seconds)",
-    "HEX access is disabled by default. Control functions change charger behaviour and require separate validation.": "HEX access is disabled by default. Control functions change charger behaviour and require separate validation.",
-    "Enable read-only HEX register queries": "Enable read-only HEX register queries",
-    "Enable charger on/off control": "Enable charger on/off control",
-    "Enable dynamic charge current control": "Enable dynamic charge current control",
-    "Current control safety cap (A)": "Current control safety cap (A)",
-    "Current limit refresh interval (seconds)": "Current limit refresh interval (seconds)",
-    "Loss of external control returns the charger to stand-alone operation and its persistent maximum current; it is not a fail-safe shutdown.": "Loss of external control returns the charger to stand-alone operation and its persistent maximum current; it is not a fail-safe shutdown."
+    "State expiration (seconds)": "状态过期时间（秒）",
+    "VE.Direct serial port": "VE.Direct 串口"
 }
