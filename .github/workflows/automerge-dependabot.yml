@@ -6,8 +6,9 @@ name: Auto-Merge Dependabot PRs
 
 on:
     # Trigger when a PR is opened or updated
-    # WARNING: This needs to be run in the PR base, DO NOT build untrusted code in this action
-    pull_request_target:
+    # Keep the base-repository workflow read-only for forked PRs. The Dependabot
+    # actor filter is the trust boundary for this narrowly scoped auto-merge job.
+    pull_request:
         types: [opened, synchronize, reopened]
 
 jobs:

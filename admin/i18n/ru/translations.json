@@ -1,4 +1,14 @@
 {
+    "Current control safety cap (A)": "Защитный верхний предел для управления током (A)",
+    "Current limit refresh interval (seconds)": "Интервал обновления ограничения тока (секунды)",
+    "Enable charger on/off control": "Включить управление включением и выключением зарядного устройства",
+    "Enable dynamic charge current control": "Включить динамическое управление током зарядки",
+    "Enable read-only HEX register queries": "Включить запросы только на чтение регистров HEX",
+    "Frame sampling interval (seconds)": "Интервал выборки кадров (секунды)",
+    "HEX access is disabled by default. Control functions change charger behaviour and require separate validation.": "Доступ HEX по умолчанию отключён. Функции управления изменяют поведение зарядного устройства и требуют отдельной проверки.",
     "Leave empty or 0 to not expire states": "Оставьте пустым или 0, чтобы состояния не истекали.",
-    "Please choose your preferred settings": "Пожалуйста, выберите предпочитаемые настройки"
+    "Loss of external control returns the charger to stand-alone operation and its persistent maximum current; it is not a fail-safe shutdown.": "При потере внешнего управления зарядное устройство возвращается к автономной работе с сохранённым значением максимального тока; это не является безопасным отключением при отказе.",
+    "Please choose your preferred settings": "Пожалуйста, выберите предпочитаемые настройки",
+    "State expiration (seconds)": "Срок действия состояния (секунды)",
+    "VE.Direct serial port": "Последовательный порт VE.Direct"
 }

@@ -1,4 +1,14 @@
 {
+    "Current control safety cap (A)": "Veiligheidslimiet voor de stroomregeling (A)",
+    "Current limit refresh interval (seconds)": "Verversingsinterval van de stroomlimiet (seconden)",
+    "Enable charger on/off control": "Aan/uit-besturing van de lader inschakelen",
+    "Enable dynamic charge current control": "Dynamische regeling van de laadstroom inschakelen",
+    "Enable read-only HEX register queries": "Alleen-lezenopvragingen van HEX-registers inschakelen",
+    "Frame sampling interval (seconds)": "Bemonsteringsinterval voor frames (seconden)",
+    "HEX access is disabled by default. Control functions change charger behaviour and require separate validation.": "HEX-toegang is standaard uitgeschakeld. Besturingsfuncties veranderen het gedrag van de lader en vereisen een afzonderlijke validatie.",
     "Leave empty or 0 to not expire states": "Laat leeg of 0 om de status niet te laten verlopen",
-    "Please choose your preferred settings": "Kies uw voorkeursinstellingen"
+    "Loss of external control returns the charger to stand-alone operation and its persistent maximum current; it is not a fail-safe shutdown.": "Bij verlies van externe besturing keert de lader terug naar zelfstandige werking en de permanent opgeslagen maximale stroom; dit is geen foutveilige uitschakeling.",
+    "Please choose your preferred settings": "Kies uw voorkeursinstellingen",
+    "State expiration (seconds)": "Verlooptijd van de status (seconden)",
+    "VE.Direct serial port": "Seriële VE.Direct-poort"
 }
