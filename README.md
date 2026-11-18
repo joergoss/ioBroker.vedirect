@@ -14,6 +14,7 @@ Standardmäßig read-only ioBroker-Adapter für Victron-Geräte mit serieller VE
 - Kontrollierte Behandlung asynchroner HEX-Nachrichten und Wiederaufsynchronisation.
 - Strikte numerische Validierung; keine stillen `parseFloat`-Teilwerte, kein `NaN` und keine erfundenen Nullen.
 - Instanzgebundener SerialPort-12-Lifecycle mit Open-/Set-/Close-Timeouts, Reconnect und Late-Callback-Schutz.
+- PTY-/socat-Endpunkte ohne Modem-Control-Ioctl werden akzeptiert; andere Set-Fehler bleiben harte Open-Fehler.
 - `info.connection` folgt ausschließlich frischen gültigen Blöcken.
 - Objekt-Migration vor State-Schreiben sowie behandelte Promise-Fehler.
 - Frame-Sampling ohne Verlust einzelner Protokollfelder.
@@ -114,13 +115,19 @@ npm run test:all
 
 Die Tests umfassen unter anderem den exakten offiziellen FAQ-Frame, alle Chunk-Grenzen und Checksumbytes, HEX/Multiblock/Recovery, reale SmartSolar- und BMV-Vektoren, Serial-Fehler und hängende native Callbacks, State-/TTL-/Sampling-Verhalten sowie getrennte Instanzen.
 
-Der vollständige Audit steht in [docs/audit-2026-11-17.md](docs/audit-2026-11-17.md).
+Der vollständige Audit steht in [docs/audit-2026-11-17.md](docs/audit-2026-11-17.md). Ein quantitativer Vergleich von Sampling, TTL, CPU und Redis-State-Writes steht in [docs/performance-2026-11-18.md](docs/performance-2026-11-18.md).
 
 ## Dependency-Audit
 
 Der Produktions-Audit ist ohne Befund. Im Entwicklungs-Toolchain-Audit verbleibt eine transitive `picomatch`-ReDoS-Meldung über `tinyglobby`/TypeScript-ESLint, für die zum Prüfzeitpunkt keine korrigierte kompatible Release-Kette verfügbar ist. Sie betrifft ausschließlich Entwicklungs-Globbing mit potenziell bösartigen Patterns, nicht den Adapterbetrieb oder die VE.Direct-Verarbeitung.
 
 ## Changelog
+### **WORK IN PROGRESS**
+
+- (joerg) Dependabot-Auto-Merge auf sicheren `pull_request`-Trigger umgestellt; `@iobroker/testing` 6.3.2 und adapter-core 3.4.3 aktualisiert.
+- (joerg) Virtuelle serielle Endpunkte ohne Modem-Control-Ioctl (`ENOTTY`) unterstützt; andere Set-Fehler bleiben hart.
+- (joerg) Pi4-Benchmark für Sampling, TTL, CPU und Redis-State-Writes ergänzt.
+
 ### 0.5.0 (2026-11-18)
 
 - (joerg) Optionaler HEX-Get-Client mit offiziellen Rev.-18-Fixtures, strenger Register-/Response-Prüfung und read-only Hardwareprobe.
