@@ -1,6 +1,6 @@
 # ioBroker VE.Direct Adapter
 
-ioBroker adapter for reading VE.Direct data from Victron devices (solar charge controllers, battery monitors) via USB/serial connection. This read-only adapter implements VE.Direct Protocol Version 3.34 and provides real-time monitoring of Victron energy devices in the ioBroker smart home platform.
+ioBroker adapter for VE.Direct data from Victron devices (solar charge controllers, battery monitors) via USB/serial connection. The adapter is read-only by default, implements VE.Direct Protocol 3.34, and offers separately opt-in, validated HEX Get and selected SmartSolar controls.
 
 Always reference these instructions first and fallback to search or bash commands only when you encounter unexpected information that does not match the info here.
 
@@ -52,9 +52,11 @@ Always reference these instructions first and fallback to search or bash command
 ## Architecture and Key Files
 
 ### Core Application Files
-- `main.js` -- Adapter lifecycle, configuration, frame sampling and state publication
-- `lib/veDirectCom.js` -- SerialPort lifecycle with reconnect and close handling
-- `lib/veDirect/veDirectParser.js`, `lib/veDirect/fields.js` -- Byte-oriented parser and field registry
+- `main.js` -- Adapter lifecycle, configuration, frame sampling, validated control states and state publication
+- `lib/veDirectCom.js` -- SerialPort lifecycle with reconnect, write/drain and close handling
+- `lib/veDirectHexClient.js` -- Per-instance HEX transaction queue, response matching and read-after-write
+- `lib/veDirect/veDirectParser.js`, `lib/veDirect/fields.js` -- Byte-oriented TEXT/HEX framing parser and TEXT field registry
+- `lib/veDirect/hexProtocol.js`, `lib/veDirect/hexFields.js` -- HEX codec and strict register whitelist
 - `lib/stateAttr.js`, `lib/ProductNames.js`, `lib/DeviceModes.js`, `lib/ErrorNames.js`, etc. -- Protocol lookup tables
 
 ### Configuration and Admin
@@ -137,8 +139,9 @@ Repository Root:
 - Admin interface and configuration can be tested in ioBroker environment
 
 ### Protocol Support
-- Implements read-only VE.Direct Protocol Version 3.34
-- Supports all standard Victron devices with VE.Direct connectivity
+- Implements VE.Direct Protocol 3.34 TEXT monitoring; read-only remains the default.
+- Optional HEX Get and selected Set functions use BlueSolar/SmartSolar HEX Rev. 18, a fixed register whitelist, response validation and Read-after-Write.
+- Supports standard Victron devices for TEXT fields; control availability is model/firmware/capability dependent.
 - Frame sampling interval is configurable; every complete frame is still parsed, and the last value per field is published per interval
 
 ## Performance and Timing
