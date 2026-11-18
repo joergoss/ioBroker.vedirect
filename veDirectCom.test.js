@@ -903,4 +903,45 @@ describe('VeDirectCom serial lifecycle', () => {
         expect(closeErrors).to.have.lengthOf(1);
         await expect(com.writeAndDrain(Buffer.from(':A\n'))).to.be.rejectedWith('not ready');
     });
+
+    for (const error of [
+        Object.assign(new Error('Inappropriate ioctl for device, cannot set'), { code: 'ENOTTY' }),
+        Object.assign(new Error('Inappropriate ioctl for device, cannot set'), { errno: -25 }),
+        new Error('Inappropriate ioctl for device, cannot set'),
+        new Error('Error: Inappropriate ioctl for device, cannot set'),
+    ]) {
+        it(`continues opening a virtual stream when modem control is unsupported (${error.code || error.errno || 'message-only'})`, async () => {
+            const port = new FakeSerialPort();
+            port.failSet = error;
+            const com = new VeDirectCom((_path, _options, callback) => {
+                process.nextTick(() => {
+                    port.isOpen = true;
+                    callback();
+                });
+                return port;
+            });
+            const frames = [];
+            com.onFrame = frame => frames.push(frame);
+            await com.open('fake-pty');
+            port.emit('data', makeFrame([['V', '13118']]));
+            expect(frames).to.deep.equal([{ V: 13.118 }]);
+            expect(port.setCalls).to.equal(1);
+            await com.close();
+        });
+    }
+
+    it('rejects every other modem-control error instead of hiding it as PTY support', async () => {
+        const port = new FakeSerialPort();
+        port.failSet = Object.assign(new Error('Inappropriate ioctl for device, cannot set'), { code: 'EACCES' });
+        const com = new VeDirectCom((_path, _options, callback) => {
+            process.nextTick(() => {
+                port.isOpen = true;
+                callback();
+            });
+            return port;
+        });
+        await expect(com.open('fake')).to.be.rejectedWith('cannot set');
+        expect(port.closeCalls).to.equal(1);
+        expect(com.isOpen()).to.equal(false);
+    });
 });

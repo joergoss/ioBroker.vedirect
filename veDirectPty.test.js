@@ -281,17 +281,12 @@ ptyDescribe(suiteName, function () {
             const nativeSet = port.set.bind(port);
             port.set = (settings, setCallback) => {
                 nativeSet(settings, error => {
-                    // SerialPort 12 always clears BRK and modem lines. POSIX PTYs
-                    // on macOS (and some Linux configurations) reject those hardware
-                    // ioctls with ENOTTY. Emulate only that absent modem-control
-                    // facility; opening, locking, reads, writes, drain and close all
-                    // remain the real native SerialPort implementation.
+                    // Record PTY-only ioctl gaps, but return the native error to
+                    // VeDirectCom. Production must handle precisely this case.
                     if (error && /Inappropriate ioctl for device, cannot set/.test(error.message)) {
                         ptySetFallbacks.push(error);
-                        setCallback(null);
-                    } else {
-                        setCallback(error);
                     }
+                    setCallback(error);
                 });
             };
             return port;
