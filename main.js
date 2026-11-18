@@ -287,6 +287,9 @@ class Vedirect extends utils.Adapter {
                     return;
                 }
                 await this.writeState(stateId, value);
+                if (this.unloaded || generation !== this.connectionGeneration) {
+                    return;
+                }
                 if (name === 'capabilities') {
                     if (typeof value !== 'number') {
                         throw new TypeError('Capabilities response is not numeric');
@@ -537,19 +540,17 @@ class Vedirect extends utils.Adapter {
             return;
         }
         const localId = id.slice(this.namespace.length + 1);
+        const generation = this.connectionGeneration;
         try {
-            if (!this.isFresh() || this.connectionRequested === false) {
-                throw new Error('VE.Direct control requires an open connection with fresh valid TEXT data');
-            }
+            this.assertControlSession(generation);
             if (localId === 'control.chargerOn') {
                 if (!this.chargerControlEnabled || typeof state.val !== 'boolean') {
                     throw new Error('Charger control is disabled or requires a strict boolean value');
                 }
                 const actual = await this.hexClient.setField('deviceMode', state.val);
-                if (this.unloaded) {
-                    throw new Error('VE.Direct adapter is unloading');
-                }
+                this.assertControlSession(generation);
                 await this.writeState('control.chargerOn', actual);
+                this.assertControlSession(generation);
                 await this.writeState('control.lastError', '');
                 return;
             }
@@ -592,21 +593,36 @@ class Vedirect extends utils.Adapter {
         return value;
     }
 
-    async ensureExternalControlCapability() {
+    assertControlSession(generation) {
+        if (this.unloaded) {
+            throw new Error('VE.Direct adapter is unloading');
+        }
+        if (
+            generation !== this.connectionGeneration ||
+            this.connectionRequested === false ||
+            !this.isFresh() ||
+            !this.com.isOpen()
+        ) {
+            throw new Error('VE.Direct control requires fresh valid TEXT data and an unchanged open session');
+        }
+    }
+
+    async ensureExternalControlCapability(generation = this.connectionGeneration) {
+        this.assertControlSession(generation);
         if (this.externalControlSupported === undefined) {
             if (!this.hexClient) {
                 throw new Error('HEX client is not available');
             }
             const capabilities = await this.hexClient.getField('capabilities');
-            if (this.unloaded) {
-                throw new Error('VE.Direct adapter is unloading');
-            }
+            this.assertControlSession(generation);
             if (typeof capabilities !== 'number') {
                 throw new TypeError('Capabilities response is not numeric');
             }
             this.externalControlSupported = hasCapability(capabilities, CAPABILITY_BITS.externalControl);
             await this.writeState('control.capabilities', capabilities);
+            this.assertControlSession(generation);
             await this.writeState('control.externalControlSupported', this.externalControlSupported);
+            this.assertControlSession(generation);
         }
         if (!this.externalControlSupported) {
             throw new Error('The connected device does not advertise external-control support');
@@ -633,40 +649,39 @@ class Vedirect extends utils.Adapter {
         if (!this.hexClient) {
             throw new Error('HEX client is not available');
         }
+        const generation = this.connectionGeneration;
+        this.assertControlSession(generation);
         const client = this.hexClient;
-        await this.ensureExternalControlCapability();
-        if (this.unloaded) {
-            throw new Error('VE.Direct adapter is unloading');
-        }
+        await this.ensureExternalControlCapability(generation);
+        this.assertControlSession(generation);
         const mode = await client.setField('networkMode', NETWORK_MODES.external);
-        if (this.unloaded) {
-            throw new Error('VE.Direct adapter is unloading');
-        }
+        this.assertControlSession(generation);
         if (mode !== 'external') {
             throw new Error(`Network mode readback is ${String(mode)}, expected external`);
         }
         await this.writeState('control.networkMode', mode);
-        if (this.unloaded) {
-            throw new Error('VE.Direct adapter is unloading');
-        }
+        this.assertControlSession(generation);
         const actual = await client.setField('chargeCurrentLimit', value);
-        if (this.unloaded) {
-            throw new Error('VE.Direct adapter is unloading');
-        }
+        this.assertControlSession(generation);
         if (typeof actual !== 'number' || actual !== value) {
             throw new Error(`Charge current readback ${actual} A differs from requested ${value} A`);
         }
         await this.writeState('control.chargeCurrentLimit', actual);
+        this.assertControlSession(generation);
         this.desiredCurrentLimit = actual;
         this.currentLimitActive = true;
         if (restartTimer) {
             this.startCurrentLimitSupervisor();
         }
         await this.writeState('control.currentLimitActive', true);
+        this.assertControlSession(generation);
         await this.writeState('control.lastError', '');
     }
 
     startCurrentLimitSupervisor() {
+        if (this.unloaded || !this.currentLimitActive) {
+            return;
+        }
         if (this.currentLimitTimer) {
             clearInterval(this.currentLimitTimer);
         }
@@ -711,12 +726,15 @@ class Vedirect extends utils.Adapter {
         if (this.unloaded) {
             return;
         }
+        const generation = this.connectionGeneration;
         let failure;
         try {
             if (!this.hexClient) {
                 throw new Error('HEX client is not available');
             }
+            this.assertControlSession(generation);
             const mode = await this.hexClient.setField('networkMode', NETWORK_MODES.standalone);
+            this.assertControlSession(generation);
             if (mode !== 'standalone') {
                 throw new Error(`Network mode readback is ${String(mode)}, expected standalone`);
             }

@@ -86,6 +86,7 @@ function hexHarness(options = {}) {
     adapter.currentLimitMax = options.currentLimitMax ?? 50;
     adapter.currentLimitRefreshSeconds = options.currentLimitRefreshSeconds ?? 20;
     adapter.externalControlSupported = options.externalControlSupported ?? true;
+    adapter.com.isOpen.returns(true);
     adapter.hexClient = {
         getField: sinon.stub(),
         setField: sinon.stub(),
@@ -892,6 +893,68 @@ describe('VE.Direct validated HEX adapter integration', () => {
         await first;
         expect(adapter.desiredCurrentLimit).to.equal(12.3);
         expect(adapter.hexClient.setField.withArgs('chargeCurrentLimit', 10).called).to.equal(false);
+    });
+
+    it('blocks an old capability from reactivating the gate after disconnect', async () => {
+        const adapter = make();
+        let releaseCapabilities;
+        adapter.hexClient.getField.withArgs('capabilities').resolves(0x8000);
+        adapter.setStateAsync
+            .withArgs('control.capabilities')
+            .returns(new Promise(resolve => (releaseCapabilities = resolve)));
+        const refreshing = adapter.refreshHexState();
+        await flush();
+        await adapter.safeSetConnectionState(false);
+        expect(adapter.externalControlSupported).to.equal(undefined);
+        releaseCapabilities();
+        await refreshing;
+        expect(adapter.externalControlSupported).to.equal(undefined);
+        expect(adapter.hexClient.getField.withArgs('deviceMode').called).to.equal(false);
+    });
+
+    it('prevents a current Set when disconnect wins after network-mode state publication', async () => {
+        const adapter = make();
+        adapter.hexClient.setField.withArgs('networkMode', 5).resolves('external');
+        adapter.hexClient.setField.withArgs('chargeCurrentLimit', 10).resolves(10);
+        let releaseNetworkState;
+        adapter.setStateAsync
+            .withArgs('control.networkMode')
+            .returns(new Promise(resolve => (releaseNetworkState = resolve)));
+        const applying = adapter.applyCurrentLimit(10);
+        const assertion = expect(applying).to.be.rejectedWith('unchanged open session');
+        await flush();
+        await adapter.safeSetConnectionState(false);
+        releaseNetworkState();
+        await assertion;
+        expect(adapter.hexClient.setField.withArgs('chargeCurrentLimit').called).to.equal(false);
+        expect(adapter.currentLimitActive).to.equal(false);
+    });
+
+    it('cannot reactivate the supervisor after unload during current state publication', async () => {
+        const adapter = make();
+        adapter.unloadTimeoutMs = 20;
+        adapter.hexClient.setField.withArgs('networkMode', 5).resolves('external');
+        adapter.hexClient.setField.withArgs('chargeCurrentLimit', 10).resolves(10);
+        let releaseCurrentState;
+        adapter.setStateAsync
+            .withArgs('control.chargeCurrentLimit')
+            .returns(new Promise(resolve => (releaseCurrentState = resolve)));
+        const applying = adapter.applyCurrentLimit(10);
+        const assertion = expect(applying).to.be.rejectedWith('unloading');
+        await flush();
+        adapter.onUnload(() => undefined);
+        await adapter.unloadPromise;
+        releaseCurrentState();
+        await assertion;
+        await flush();
+        expect(adapter.unloaded).to.equal(true);
+        expect(adapter.currentLimitActive).to.equal(false);
+        expect(adapter.currentLimitTimer).to.equal(undefined);
+        const activeWrites = adapter.setStateAsync
+            .getCalls()
+            .filter(call => call.args[0] === 'control.currentLimitActive')
+            .map(call => call.args[1].val);
+        expect(activeWrites[activeWrites.length - 1]).to.equal(false);
     });
 
     it('refreshes both registers but skips a stale TEXT link', async () => {
