@@ -23,6 +23,8 @@ Es gibt keine Oberfläche für beliebige Register oder Roh-HEX-Befehle. BMS-/Sla
 
 Jede Antwort benötigt gültige Framing-/ASCII-/Längenregeln und die HEX-Checksumme modulo `0x55`. Command, Register-ID, Flags und exakte Wertebreite werden geprüft. Ein nicht unterstütztes Register erzeugt keinen Ersatzwert; der Fehler wird in `control.lastError` sichtbar und übrige unabhängige Gets werden fortgesetzt.
 
+Bei beiden produktiven SmartSolar MPPT 100/50 wurde `0xFFFF` für ungenutztes `chargeCurrentLimit` und `chargeVoltageSetpoint` real bestätigt. Diese Sentinel-Werte werden als `null` statt 6553,5 A beziehungsweise 655,35 V veröffentlicht und sind als Steuerwerte verboten.
+
 Für SmartSolar-Firmware ab 1.53 wird TEXT nicht wegen HEX pausiert. Die vorhandene TEXT-Liveness bleibt deshalb maßgeblich.
 
 ## Steuer-Opt-ins
