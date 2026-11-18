@@ -4,11 +4,11 @@ Stand: 2026-11-18, Entwicklungs- und Prüfbranch `feat/hex-control`.
 
 ## Automatisierte Prüfungen
 
-Finaler Kandidat `a6803f1`:
+Finaler Kandidat `58f5d68`:
 
 - `npm run test:all` vollständig bestanden.
-- **379 Tests** im fachlichen JS-/Package-Teil.
-- **324 Tests** im js-controller-Integrationsteil.
+- **385 Tests** im fachlichen JS-/Package-Teil.
+- **330 Tests** im js-controller-Integrationsteil.
 - TypeScript/checkJs bestanden.
 - ESLint: 0 Fehler; 48 nicht blockierende JSDoc-Warnungen im vorhandenen Stil.
 - Produktions-Dependency-Audit: 0 Befunde; keine neue Runtime-Dependency.
@@ -17,7 +17,7 @@ Finaler Kandidat `a6803f1`:
 ## Protokoll- und Transportabdeckung
 
 - 54 Codec-Tests mit offiziellen Rev.-18-Fixtures, allen 256 Flagkombinationen, allen 256 Checksummenbytes und deterministischen Zufallsframes.
-- 81 Registry-Tests für IDs, Breiten, Little-Endian, Skalierungen, Enums, Capabilities und Schreibverbote.
+- 84 Registry-Tests für IDs, Breiten, Little-Endian, Skalierungen, Enums, Capabilities, reale Sentinels und Schreibverbote.
 - 33 Transaktionsclient-Tests für Response-Matching, frühe Antworten, Fehlerflags, Echo-Mismatch, Timeout, Cancel, Reconnect und zwei Clients.
 - 13 echte Parser-/Com-/Client-Fake-Serial-Integrationsszenarien einschließlich aller ausgewählten Chunk-Grenzen.
 - 8 native POSIX-PTY-Szenarien mit SerialPort 12 und unabhängigem Python-Codec; zusätzlich 80/80 in zehn Wiederholungsläufen.
@@ -34,6 +34,7 @@ Die Abschlussreview reproduzierte sechs zunächst nicht abgedeckte Fälle. Alle 
 | Pre-cancel-Response bestätigt neue Operation | Sessioninvalidierung und Close auch für `cancel()`; neue Writes erst nach Reconnect |
 | Supervisor wird nach Unload wieder aktiv | Unload-/Generationsprüfung nach dem Strom-State-Write; Timerstart zusätzlich verriegelt |
 | Kompletter TEXT-Block nach Abbruch verschluckt | Begrenzte Recovery nur für unmittelbaren CRLF-Kandidaten mit allen Struktur-/Wert-/Checksummenprüfungen |
+| Alter prüfsummengültiger CRLF-Suffix nach Nullsummen-Präfix | Präfix-Checksumme bleibt erhalten; nicht eindeutig zuordenbare Suffixe werden fail-closed verworfen, spätere eindeutige Blöcke resynchronisieren |
 | Charge Master `0x21` abgelehnt | Read-only-Dekodierung als `chargeMaster`; Schreiben weiterhin auf Standalone/External beschränkt |
 
 Zusätzlich wurde Auto-Resume nach Reconnect verworfen: Nach Verbindungsverlust sind Timer und bestätigter Sollwert gelöscht. Eine Stromsteuerung benötigt immer eine neue ausdrückliche Bestätigung.
