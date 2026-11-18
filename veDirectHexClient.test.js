@@ -565,7 +565,7 @@ describe('VeDirectHexClient', () => {
             writing.resolve();
             await immediate();
             expect(com.writes).to.have.lengthOf(1);
-            expect(com.closeCalls).to.equal(0);
+            expect(com.closeCalls).to.equal(1);
         });
 
         it('supports maxQueueSize zero for no waiting requests', async () => {
@@ -599,10 +599,37 @@ describe('VeDirectHexClient', () => {
                 com.emit(getResponse('deviceState', [5]));
                 await clock.tickAsync(200);
                 expect(com.writes).to.have.lengthOf(1);
-                expect(com.closeCalls).to.equal(0);
+                expect(com.closeCalls).to.equal(1);
             } finally {
                 clock.restore();
             }
+        });
+
+        it('invalidates cancel transitions so a pre-cancel response cannot satisfy a new request', async () => {
+            const com = new FakeCom();
+            const writing = deferred();
+            com.writeHook = () => writing.promise;
+            const client = createClient(com);
+            const first = client.getField('deviceState');
+            const firstRejection = rejection(first, /cancel/);
+            client.cancel(new Error('cancel before reconnect'));
+            await firstRejection;
+            expect(com.closeCalls).to.equal(1);
+            await rejection(client.getField('deviceState'), /session is invalid/);
+
+            com.emit(getResponse('deviceState', [99]));
+            writing.resolve();
+            await immediate();
+            expect(com.writes).to.have.lengthOf(1);
+            expect(com.closeCalls).to.equal(1);
+
+            com.portClosed();
+            com.sessionId++;
+            const second = client.getField('deviceState');
+            await immediate();
+            com.emit(getResponse('deviceState', [5]));
+            expect(await second).to.equal(5);
+            expect(com.writes).to.have.lengthOf(2);
         });
 
         it('permits a new session after invalidation and does not write before reconnect', async () => {
