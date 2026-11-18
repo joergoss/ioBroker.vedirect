@@ -754,10 +754,20 @@ class Vedirect extends utils.Adapter {
         if (!connected) {
             this.clearPendingSample();
             this.pendingFrameBatch = null;
+            const supervisorWasActive = this.currentLimitActive || this.currentLimitTimer !== undefined;
+            if (this.currentLimitTimer) {
+                clearInterval(this.currentLimitTimer);
+                this.currentLimitTimer = undefined;
+            }
+            this.currentLimitActive = false;
+            this.desiredCurrentLimit = undefined;
             this.hexBootstrappedGeneration = -1;
             this.externalControlSupported = undefined;
             if (this.hexClient) {
                 this.hexClient.cancel(new Error('VE.Direct connection lost'));
+            }
+            if (supervisorWasActive) {
+                await this.writeState('control.currentLimitActive', false);
             }
             if (this.connectionRequested !== false) {
                 this.connectionGeneration++;
