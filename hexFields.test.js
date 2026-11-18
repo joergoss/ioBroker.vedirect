@@ -73,7 +73,7 @@ describe('VE.Direct HEX field registry', () => {
         }
         expect(HEX_FIELDS.networkMode.writableValues).to.deep.equal([0, 5]);
         expect(HEX_FIELDS.chargeCurrentLimit.min).to.equal(0);
-        expect(HEX_FIELDS.chargeCurrentLimit.max).to.equal(6553.5);
+        expect(HEX_FIELDS.chargeCurrentLimit.max).to.equal(6553.4);
     });
 
     it('exports stable capability, device-mode, network-mode and flag constants', () => {
@@ -252,7 +252,7 @@ describe('VE.Direct HEX chargeCurrentLimit', () => {
         [2.3, '17 00'],
         [12.3, '7b 00'],
         [50, 'f4 01'],
-        [6553.5, 'ff ff'],
+        [6553.4, 'fe ff'],
     ];
     for (const [value, payload] of encodeFixtures) {
         it(`encodes exactly representable ${value} A without binary floating-point rejection`, () => {
@@ -266,7 +266,8 @@ describe('VE.Direct HEX chargeCurrentLimit', () => {
         ['17 00', 2.3],
         ['7b 00', 12.3],
         ['f4 01', 50],
-        ['ff ff', 6553.5],
+        ['fe ff', 6553.4],
+        ['ff ff', null],
     ];
     for (const [payload, expected] of decodeFixtures) {
         it(`decodes little-endian fixture ${payload} to ${expected} A`, () => {
@@ -281,7 +282,7 @@ describe('VE.Direct HEX chargeCurrentLimit', () => {
     });
 
     it('rejects negative current limits and un16 overflow', () => {
-        for (const value of [-0.1, -1, -6553.5, 6553.6, 6554, 65535, Number.MAX_VALUE]) {
+        for (const value of [-0.1, -1, -6553.5, 6553.5, 6553.6, 6554, 65535, Number.MAX_VALUE]) {
             expect(() => encodeRaw('chargeCurrentLimit', value), String(value)).to.throw();
         }
     });
@@ -290,6 +291,13 @@ describe('VE.Direct HEX chargeCurrentLimit', () => {
         for (const value of [NaN, Infinity, -Infinity, '12.3', '', null, undefined, true, false, 123n, {}, []]) {
             expect(() => encodeRaw('chargeCurrentLimit', value), String(value)).to.throw();
         }
+    });
+
+    it('maps real SmartSolar unset sentinels to null and reserves them for writes', () => {
+        expect(decodeRaw('chargeCurrentLimit', Buffer.from([0xff, 0xff]))).to.equal(null);
+        expect(decodeRaw('chargeVoltageSetpoint', Buffer.from([0xff, 0xff]))).to.equal(null);
+        expect(() => encodeRaw('chargeCurrentLimit', 6553.5)).to.throw(/range/);
+        expect(decodeRaw('maxBatteryCurrent', Buffer.from([0xff, 0xff]))).to.equal(6553.5);
     });
 
     it('returns independent payload buffers', () => {
@@ -320,7 +328,8 @@ describe('VE.Direct HEX read-only scaled settings', () => {
         ['1d 00', 0.29],
         ['a0 05', 14.4],
         ['d2 04', 12.34],
-        ['ff ff', 655.35],
+        ['fe ff', 655.34],
+        ['ff ff', null],
     ];
     for (const [payload, expected] of voltageFixtures) {
         it(`decodes chargeVoltageSetpoint fixture ${payload} at exact 0.01 V scale`, () => {
