@@ -187,27 +187,76 @@ describe('VE.Direct byte parser', () => {
         const frame = makeFrame(officialFields);
         const next = makeFrame([['I', '1000']]);
         for (const position of [0, 20, Math.floor(frame.length / 2), frame.length - 1, frame.length]) {
-            const parser = new VeDirectParser();
-            const frames = collect(parser);
             const withHex = Buffer.concat([
                 frame.subarray(0, position),
                 Buffer.from(':A1234\n'),
                 frame.subarray(position),
                 next,
             ]);
-            parser.receive(withHex);
-            if (position === 0 || position === frame.length) {
-                expect(
-                    frames.some(item => item.V === 26.201),
-                    `HEX outside TEXT at ${position}`,
-                ).to.equal(true);
-            } else {
-                expect(
-                    frames.some(item => item.V !== undefined),
-                    `interrupted TEXT at ${position}`,
-                ).to.equal(false);
+            for (let split = 0; split <= withHex.length; split++) {
+                const parser = new VeDirectParser();
+                const frames = collect(parser);
+                parser.receive(withHex.subarray(0, split));
+                parser.receive(withHex.subarray(split));
+                const expected = position === 0 || position === frame.length ? [officialDecoded, { I: 1 }] : [{ I: 1 }];
+                expect(frames, `HEX at ${position}, split ${split}`).to.deep.equal(expected);
             }
-            expect(frames[frames.length - 1], `next block after HEX at ${position}`).to.deep.equal({ I: 1 });
+        }
+    });
+
+    it('accepts a complete block immediately after HEX without an old TEXT remainder at every split', () => {
+        const interrupted = makeFrame(officialFields);
+        const hex = Buffer.from(':A0102000543\n', 'ascii');
+        const stream = Buffer.concat([interrupted.subarray(0, 12), hex, makeFrame([['I', '1000']])]);
+        const following = makeFrame([['V', '13118']]);
+
+        for (let split = 0; split <= stream.length; split++) {
+            const parser = new VeDirectParser();
+            const frames = collect(parser);
+            const messages = [];
+            let validFrames = 0;
+            parser.onHexMessage = message => messages.push(message);
+            parser.onValidFrame = () => validFrames++;
+
+            parser.receive(stream.subarray(0, split));
+            parser.receive(stream.subarray(split));
+
+            expect(frames, `split ${split}`).to.deep.equal([{ I: 1 }]);
+            expect(validFrames, `split ${split}`).to.equal(1);
+            expect(messages, `split ${split}`).to.have.lengthOf(1);
+            expect(messages[0].equals(hex), `split ${split}`).to.equal(true);
+            expect(parser.checksumErrors, `split ${split}`).to.equal(0);
+            expect(parser.invalidFrames, `split ${split}`).to.equal(0);
+
+            parser.receive(following);
+            expect(frames, `following block at split ${split}`).to.deep.equal([{ I: 1 }, { V: 13.118 }]);
+            expect(validFrames, `following block at split ${split}`).to.equal(2);
+        }
+    });
+
+    it('does not rehabilitate malformed or garbage blocks immediately after HEX', () => {
+        const interrupted = makeFrame(officialFields).subarray(0, 12);
+        const hex = Buffer.from(':A0102000543\n', 'ascii');
+        const vectors = [
+            makeRawFrame('\r\nk~\r\nV\t13118\r\nChecksum\t'),
+            makeRawFrame('\r\nV\t0x3336\r\nX_PAD\tP\r\n\r\nV\t13118\r\nChecksum\t'),
+            makeRawFrame(`\r\n${'A'.repeat(128)}i\r\nV\t13118\r\nChecksum\t`),
+            makeRawFrame('X\nV\t0x3336\r\nX_PAD\tPPe\r\n\r\nV\t13118\r\nChecksum\t'),
+        ];
+        const next = makeFrame([['I', '1000']]);
+
+        for (const invalid of vectors) {
+            const stream = Buffer.concat([interrupted, hex, invalid, next]);
+            for (let split = 0; split <= stream.length; split++) {
+                const parser = new VeDirectParser();
+                const frames = collect(parser);
+                let validFrames = 0;
+                parser.onValidFrame = () => validFrames++;
+                parser.receive(stream.subarray(0, split));
+                parser.receive(stream.subarray(split));
+                expect(frames, `split ${split}`).to.deep.equal([{ I: 1 }]);
+                expect(validFrames, `split ${split}`).to.equal(1);
+            }
         }
     });
 

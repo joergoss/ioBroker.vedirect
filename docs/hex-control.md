@@ -46,7 +46,7 @@ Control-Writes werden nur bei offener Verbindung und frischen gültigen TEXT-Dat
 | `control.chargerOn` | mit Charger-Opt-in | Gelesener Charger-Softschalter; kein Nachweis aktuell fließender PV-Leistung |
 | `control.deviceState` | nie | Rohbetriebszustand des Geräts |
 | `control.remoteControlUsed` | nie | Remote-Control-Maske |
-| `control.networkMode` | nie | `standalone`, `slave`, `external` oder `bms` |
+| `control.networkMode` | nie | `standalone`, `slave`, `external`, `bms` oder `chargeMaster` |
 | `control.maximumBatteryCurrent` | nie | Persistente Stromobergrenze `0xEDF0` |
 | `control.chargeCurrentLimit` | mit Strom-Opt-in | Nach Set tatsächlich zurückgelesenes dynamisches Limit in A |
 | `control.currentLimitActive` | mit Strom-Opt-in | Zustand des **lokalen Adapter-Supervisors**, nicht eine Garantie für den Gerätezustand |
