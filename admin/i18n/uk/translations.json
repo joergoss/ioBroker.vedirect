@@ -1,14 +1,14 @@
 {
+    "Current control safety cap (A)": "Безпечна верхня межа для керування струмом (A)",
+    "Current limit refresh interval (seconds)": "Інтервал оновлення обмеження струму (секунди)",
+    "Enable charger on/off control": "Увімкнути керування вмиканням і вимиканням зарядного пристрою",
+    "Enable dynamic charge current control": "Увімкнути динамічне керування струмом заряджання",
+    "Enable read-only HEX register queries": "Увімкнути запити лише на читання регістрів HEX",
+    "Frame sampling interval (seconds)": "Інтервал вибірки кадрів (секунди)",
+    "HEX access is disabled by default. Control functions change charger behaviour and require separate validation.": "Доступ HEX типово вимкнено. Функції керування змінюють поведінку зарядного пристрою й потребують окремої перевірки.",
     "Leave empty or 0 to not expire states": "Залиште порожнім або 0, щоб стани не закінчувалися",
+    "Loss of external control returns the charger to stand-alone operation and its persistent maximum current; it is not a fail-safe shutdown.": "У разі втрати зовнішнього керування зарядний пристрій повертається до автономної роботи зі збереженим значенням максимального струму; це не безпечне вимкнення в разі відмови.",
     "Please choose your preferred settings": "Будь ласка, виберіть бажані налаштування",
-    "VE.Direct serial port": "VE.Direct serial port",
-    "State expiration (seconds)": "State expiration (seconds)",
-    "Frame sampling interval (seconds)": "Frame sampling interval (seconds)",
-    "HEX access is disabled by default. Control functions change charger behaviour and require separate validation.": "HEX access is disabled by default. Control functions change charger behaviour and require separate validation.",
-    "Enable read-only HEX register queries": "Enable read-only HEX register queries",
-    "Enable charger on/off control": "Enable charger on/off control",
-    "Enable dynamic charge current control": "Enable dynamic charge current control",
-    "Current control safety cap (A)": "Current control safety cap (A)",
-    "Current limit refresh interval (seconds)": "Current limit refresh interval (seconds)",
-    "Loss of external control returns the charger to stand-alone operation and its persistent maximum current; it is not a fail-safe shutdown.": "Loss of external control returns the charger to stand-alone operation and its persistent maximum current; it is not a fail-safe shutdown."
+    "State expiration (seconds)": "Час дії стану (секунди)",
+    "VE.Direct serial port": "Послідовний порт VE.Direct"
 }
