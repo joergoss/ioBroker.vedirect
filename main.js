@@ -118,7 +118,12 @@ class Vedirect extends utils.Adapter {
         if (this.hexReadEnabled) {
             const { VeDirectHexClient } = require('./lib/veDirectHexClient');
             this.hexClient = new VeDirectHexClient(this.com);
-            this.hexClient.onError = error => this.logThrottled('VE.Direct HEX client close error: ', error);
+            this.hexClient.onError = error => {
+                this.logThrottled('VE.Direct HEX client close error: ', error);
+                if (!this.unloaded) {
+                    void this.safeSetConnectionState(false);
+                }
+            };
             if (this.chargerControlEnabled || this.currentLimitControlEnabled) {
                 await this.subscribeStatesAsync('control.*');
             }
@@ -333,11 +338,11 @@ class Vedirect extends utils.Adapter {
         if (this.unloaded || !this.serialPortPath) {
             return;
         }
-        if (this.isFresh() && this.com.isOpen()) {
+        if (this.isFresh() && this.com.isOpen() && this.connectionRequested !== false) {
             return;
         }
         await this.safeSetConnectionState(false);
-        if (this.unloaded || (this.isFresh() && this.com.isOpen())) {
+        if (this.unloaded || (this.isFresh() && this.com.isOpen() && this.connectionRequested !== false)) {
             return;
         }
         const now = Date.now();
