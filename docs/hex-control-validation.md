@@ -4,7 +4,7 @@ Stand: 2026-11-18, Entwicklungs- und Prüfbranch `feat/hex-control`.
 
 ## Automatisierte Prüfungen
 
-Finaler Kandidat `58f5d68`:
+Finaler Kandidat und Produktivrelease `v0.5.0`, Release-Commit `559a3ce7e545d3de41fa64db43c10eabd2832ba2`:
 
 - `npm run test:all` vollständig bestanden.
 - **385 Tests** im fachlichen JS-/Package-Teil.
@@ -54,8 +54,8 @@ Reale Set-Befehle wurden noch nicht gesendet. Die folgenden Nachweise wurden am 
 
 | Instanz | Get-only | Capability / Register | Set-Tests |
 |---|---|---|---|
-| `vedirect.0` / MPPT `HQ2128GXFZP` | Alle 8 Register fehlerfrei | Capabilities `0x0809EF76`, External-Control-Bit 15 aktiv; Device Mode ein; Remote-On/Off `2`; Stand-alone; persistent 50 A | **Erfolgreich:** Charger Aus/Ein; External 50 A → 10 A → 50 A → Stand-alone |
-| `vedirect.1` / MPPT `HQ2147CUA2K` | Alle 8 Register fehlerfrei | Identische Fähigkeiten und Modi; persistent 50 A | Keine Sets ausgeführt |
+| `vedirect.0` / MPPT `HQ2128GXFZP` | Alle 8 Register fehlerfrei | Capabilities `0x0809EF76`, External-Control-Bit 15 aktiv; Device Mode ein; Remote-On/Off `2`; Stand-alone; persistent 50 A | **Erfolgreich:** Charger Aus/Ein; External 50 A → 10 A → 50 A → Stand-alone; Supervisor über ioBroker mit Refresh und Restart |
+| `vedirect.1` / MPPT `HQ2147CUA2K` | Alle 8 Register fehlerfrei | Identische Fähigkeiten und Modi; persistent 50 A | Controls aktiviert, Supervisor inaktiv; keine Set-Tests nötig |
 
 Beide Geräte melden im ungesteuerten Zustand `0xFFFF` für `chargeCurrentLimit` und `chargeVoltageSetpoint`. Die erste Probe zeigte dies roh als 6553.5 beziehungsweise 655.35. Diese Werte sind Sentinel-Markierungen für ungenutzte Remote-Sollwerte und werden im Adapter inzwischen als `null` veröffentlicht. `0xFFFF` ist als Steuerwert gesperrt; `maxBatteryCurrent` bleibt davon unberührt und wurde korrekt als 50 A gelesen.
 
@@ -75,3 +75,23 @@ Nach ausdrücklicher Benutzerfreigabe wurde MPPT 1 einmalig mit dem finalen Pake
 Final blieben Device Mode `true`, Network Mode `standalone`, persistentes Maximum 50 A und Spannungssollwert `null`. `chargeCurrentLimit` blieb nach Stand-alone als zuletzt gelesener Wert 50 A erhalten, ohne die persistente Einstellung zu verändern. Es wurden keine Fehler, Timeouts oder Wiederherstellungs-Sets benötigt. Beide Produktivinstanzen wurden anschließend mit frischen TEXT-Werten erneut bestätigt.
 
 Die abschließende unabhängige Gegenprobe zu `58f5d68` bestätigte sämtliche ursprünglichen und neuen Parser-/Control-Reproduktionen als behoben, einschließlich keines automatischen Supervisor-Resume und korrekter Sentinel-/Null-Behandlung.
+
+## Produktivrollout 0.5.0
+
+Release und GitHub-Release `v0.5.0` wurden aus dem getaggten Commit `559a3ce` erzeugt und auf pi4 installiert. Runtime beider Instanzen: Adapter 0.5.0, SerialPort 12.0.0, Node 24.22.3, ARM64.
+
+- Beide Instanzen besitzen aktivierte HEX-Gets, Charger- und Stromlimit-Controls mit Sicherheitsobergrenze 50 A und 20-s-Refresh.
+- **Beide Supervisoren sind inaktiv**, beide Charger ein, beide Network Modes `standalone` und beide persistenten Maxima 50 A.
+- `control.externalControlSupported=true`; `lastError` leer; ungenutzte Sollwerte `null`.
+- Nur `chargerOn`, `chargeCurrentLimit` und `currentLimitActive` sind beschreibbar; Capabilities, persistentes Maximum und Spannungssollwert bleiben read-only.
+- Getrennte frische TEXT-Werte und unveränderte Geräteidentitäten bestätigt; `info.connection=true` und q=0.
+
+Zusätzlich wurde der komplette ioBroker-Pfad validiert:
+
+1. `control.chargerOn` über ioBroker Aus/Ein mit echtem Readback.
+2. `control.chargeCurrentLimit` 50 A und 10 A über mehrere 20-s-Refresh-Zyklen mit leerem `lastError`.
+3. `currentLimitActive=false` mit bestätigtem Stand-alone.
+4. Adapterrestart bei zuvor aktivem Limit: lokaler Supervisor `false`, kein Auto-Resume. Die anschließende direkte Get-only-Abfrage bestätigte den echten Geräte-Fallback zu `standalone` und ungenutzten Sollwerten `null`.
+5. Abschließender Restart beider Instanzen ohne gleichzeitige Config-Änderung: jeweils normaler Abschluss mit Code 11, kein SIGKILL. Die zuvor durch Objekt- und manuellen Restart doppelt ausgelösten Stopps wurden damit als Konfigurationsrace und nicht als Adapterfehler eingegrenzt.
+
+Die automatischen End-Assertions bestätigten Versionen, Konfigurationen, Frische, Datentypen, State-Qualität und unterschiedliche Seriennummern: `All final production assertions passed.`
