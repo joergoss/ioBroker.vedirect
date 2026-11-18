@@ -1,4 +1,14 @@
 {
     "Leave empty or 0 to not expire states": "Laat leeg of 0 om de status niet te laten verlopen",
-    "Please choose your preferred settings": "Kies uw voorkeursinstellingen"
+    "Please choose your preferred settings": "Kies uw voorkeursinstellingen",
+    "VE.Direct serial port": "VE.Direct serial port",
+    "State expiration (seconds)": "State expiration (seconds)",
+    "Frame sampling interval (seconds)": "Frame sampling interval (seconds)",
+    "HEX access is disabled by default. Control functions change charger behaviour and require separate validation.": "HEX access is disabled by default. Control functions change charger behaviour and require separate validation.",
+    "Enable read-only HEX register queries": "Enable read-only HEX register queries",
+    "Enable charger on/off control": "Enable charger on/off control",
+    "Enable dynamic charge current control": "Enable dynamic charge current control",
+    "Current control safety cap (A)": "Current control safety cap (A)",
+    "Current limit refresh interval (seconds)": "Current limit refresh interval (seconds)",
+    "Loss of external control returns the charger to stand-alone operation and its persistent maximum current; it is not a fail-safe shutdown.": "Loss of external control returns the charger to stand-alone operation and its persistent maximum current; it is not a fail-safe shutdown."
 }
