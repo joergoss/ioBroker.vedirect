@@ -23,24 +23,23 @@ Jeder MPPT benötigt eine eigene VE.Direct-Verbindung und einen eigenen Serialpo
 
 Der Adapter aggregiert oder steuert die beiden Geräte nicht automatisch gemeinsam; Berechnungen/Regelungen über beide MPPTs können in ioBroker-Skripten auf den getrennten States aufsetzen.
 
-## Read-only-Grenze
+## Read-only-Standard und optionaler HEX-Zugriff
 
-Der aktuelle Fork besitzt **keine Schreib- oder Steuerfunktion**. Es gibt keine beschreibbaren States und keine HEX-`Get`/`Set`-Befehle. Load-, Relais-, Charger- oder Ladestromsteuerung werden dadurch weder angeboten noch implizit unterstützt.
+Der Adapter bleibt standardmäßig read-only. Seit dem HEX-Ausbau kann pro Instanz eine feste Registerwhitelist gelesen werden; Charger-on/off und dynamisches Ladestromlimit sind separate Opt-ins mit Read-after-Write. Siehe [docs/hex-control.md](hex-control.md).
 
-## Prinzipielle Schreiboptionen einer späteren separaten Erweiterung
+Nicht freigeschaltet sind allgemeine Rohregister, Remote-Spannungsschreiben, BMS-/Slave-Modi, persistente Batterieeinstellungen und Load-/Relaissteuerung.
 
-Das offizielle BlueSolar-/SmartSolar-HEX-Protokoll dokumentiert unter anderem:
+## Grenzen der Steuerung
 
 | Funktion | Beispielregister | Wichtige Einschränkung |
 |---|---|---|
-| Dynamisches Ladestromlimit | `0x2015` | Muss zusammen mit passendem Netzwerkmodus `0x200E` verwendet und regelmäßig erneuert werden |
-| Ladespannungs-Sollwert | `0x2001` | Nur im passenden Remote-Control-Kontext; sicherheitsrelevant |
-| Charger Ein/Aus | `0x0200` | Von Remote-Control-Freigabe/Firmware abhängig |
-| Persistentes maximales Batteriestromlimit | `0xEDF0` | Batterieeinstellung, nicht mit dynamischem Limit verwechseln |
-| Load-Ausgang | `0xEDAB` | Nur bei Geräten mit Load-Ausgang; nicht beim SmartSolar 100/50 |
-| Relais-/Schwellenfunktionen | modellabhängig | Nur bei vorhandener Hardware/Firmware |
+| Dynamisches Ladestromlimit | `0x2015` | Optional implementiert; External-Control-Modus `0x200E`, Capability-Gate, Refresh und Read-after-Write erforderlich |
+| Charger Ein/Aus | `0x0200` | Optional implementiert; Software-Schalter, keine elektrische Trennung |
+| Ladespannungs-Sollwert | `0x2001` | Nur lesbar; kein Spannungsschreibsupport |
+| Persistentes maximales Batteriestromlimit | `0xEDF0` | Nur lesbar; nicht für dynamische Schleifen |
+| Load-Ausgang/Relais | modellabhängig | Keine Steuerung; kein physischer Load-/Relaisausgang am SmartSolar 100/50 belegt |
 
-Diese Auflistung ist bewusst keine Implementierungs- oder Schreibfreigabe. Register müssen pro Gerät und Firmware validiert werden.
+Ein Ausbleiben der External-Control-Daten führt nach etwa einer Minute zu Stand-alone und dem persistenten Maximalstrom, nicht zu einer ausfallsicheren Abschaltung.
 
 ### Sicherheitsanforderungen für etwaigen Schreibsupport
 

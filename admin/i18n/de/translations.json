@@ -3,5 +3,12 @@
     "Please choose your preferred settings": "Bitte wählen Sie Ihre bevorzugten Einstellungen",
     "VE.Direct serial port": "VE.Direct serielle Schnittstelle",
     "State expiration (seconds)": "Ablaufzeit der Zustände (Sekunden)",
-    "Frame sampling interval (seconds)": "Frame-Sampling-Intervall (Sekunden)"
+    "Frame sampling interval (seconds)": "Frame-Sampling-Intervall (Sekunden)",
+    "HEX access is disabled by default. Control functions change charger behaviour and require separate validation.": "HEX-Zugriff ist standardmäßig deaktiviert. Steuerfunktionen verändern das Ladeverhalten und erfordern eine gesonderte Validierung.",
+    "Enable read-only HEX register queries": "Read-only-HEX-Registerabfragen aktivieren",
+    "Enable charger on/off control": "Charger-Ein-/Aus-Steuerung aktivieren",
+    "Enable dynamic charge current control": "Dynamische Ladestromsteuerung aktivieren",
+    "Current control safety cap (A)": "Sicherheitsobergrenze für Stromsteuerung (A)",
+    "Current limit refresh interval (seconds)": "Aktualisierungsintervall des Stromlimits (Sekunden)",
+    "Loss of external control returns the charger to stand-alone operation and its persistent maximum current; it is not a fail-safe shutdown.": "Bei Verlust der externen Steuerung kehrt der Laderegler zu Stand-alone und seinem persistenten Maximalstrom zurück; dies ist keine ausfallsichere Abschaltung."
 }

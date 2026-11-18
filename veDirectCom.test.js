@@ -16,6 +16,34 @@ class FakeSerialPort extends EventEmitter {
         this.closeGate = undefined;
         this.emitCloseOnClose = true;
         this.setOptions = undefined;
+        this.writeCalls = 0;
+        this.drainCalls = 0;
+        this.written = [];
+        this.failWrite = undefined;
+        this.failDrain = undefined;
+        this.writeGate = undefined;
+        this.drainGate = undefined;
+    }
+
+    write(data, callback) {
+        this.writeCalls++;
+        this.written.push(Buffer.from(data));
+        const finish = () => callback(this.failWrite ?? null);
+        if (this.writeGate) {
+            void this.writeGate.then(finish);
+        } else {
+            finish();
+        }
+    }
+
+    drain(callback) {
+        this.drainCalls++;
+        const finish = () => callback(this.failDrain ?? null);
+        if (this.drainGate) {
+            void this.drainGate.then(finish);
+        } else {
+            finish();
+        }
     }
 
     set(options, callback) {
@@ -758,5 +786,121 @@ describe('VeDirectCom serial lifecycle', () => {
         port.emit('data', frame);
         expect(frames).to.deep.equal([{ V: 13.118 }]);
         await com.close();
+    });
+
+    it('forwards complete HEX frames and writes then drains exact bytes', async () => {
+        const port = new FakeSerialPort();
+        const com = new VeDirectCom((_path, _options, callback) => {
+            process.nextTick(() => {
+                port.isOpen = true;
+                callback();
+            });
+            return port;
+        });
+        const messages = [];
+        com.onHexMessage = message => messages.push(message);
+        await com.open('fake');
+        const response = Buffer.from(':7014020000AA\n');
+        port.emit('data', response.subarray(0, 3));
+        port.emit('data', response.subarray(3));
+        expect(messages).to.have.lengthOf(1);
+        expect(messages[0].equals(response)).to.equal(true);
+
+        const request = Buffer.from(':7014000052\n');
+        await com.writeAndDrain(request);
+        expect(port.writeCalls).to.equal(1);
+        expect(port.drainCalls).to.equal(1);
+        expect(port.written[0].equals(request)).to.equal(true);
+        await com.close();
+    });
+
+    it('rejects write and drain failures without hiding them', async () => {
+        for (const operation of ['write', 'drain']) {
+            const port = new FakeSerialPort();
+            const com = new VeDirectCom((_path, _options, callback) => {
+                process.nextTick(() => {
+                    port.isOpen = true;
+                    callback();
+                });
+                return port;
+            });
+            await com.open('fake');
+            const expected = new Error(`${operation} failed`);
+            if (operation === 'write') {
+                port.failWrite = expected;
+            } else {
+                port.failDrain = expected;
+            }
+            await expect(com.writeAndDrain(Buffer.from(':A\n'))).to.be.rejectedWith(expected.message);
+            if (operation === 'write') {
+                expect(port.drainCalls).to.equal(0);
+            }
+            await com.close();
+        }
+    });
+
+    it('times out hanging write and drain callbacks', async () => {
+        for (const operation of ['write', 'drain']) {
+            const port = new FakeSerialPort();
+            const com = new VeDirectCom(
+                (_path, _options, callback) => {
+                    process.nextTick(() => {
+                        port.isOpen = true;
+                        callback();
+                    });
+                    return port;
+                },
+                { writeTimeoutMs: 20, drainTimeoutMs: 20 },
+            );
+            await com.open('fake');
+            if (operation === 'write') {
+                port.write = () => undefined;
+            } else {
+                port.drain = () => undefined;
+            }
+            await expect(com.writeAndDrain(Buffer.from(':A\n'))).to.be.rejectedWith(`Serial ${operation} timed out`);
+            await com.close();
+        }
+    });
+
+    it('rejects a write whose port session closes before the callback completes', async () => {
+        const port = new FakeSerialPort();
+        let releaseWrite;
+        port.writeGate = new Promise(resolve => (releaseWrite = resolve));
+        const com = new VeDirectCom((_path, _options, callback) => {
+            process.nextTick(() => {
+                port.isOpen = true;
+                callback();
+            });
+            return port;
+        });
+        await com.open('fake');
+        const writing = com.writeAndDrain(Buffer.from(':A\n'));
+        const assertion = expect(writing).to.be.rejectedWith('session changed or closed');
+        await immediate();
+        await com.close();
+        releaseWrite();
+        await assertion;
+        expect(port.drainCalls).to.equal(0);
+    });
+
+    it('invalidates the session and notifies a HEX client on an unexpected close', async () => {
+        const port = new FakeSerialPort();
+        const com = new VeDirectCom((_path, _options, callback) => {
+            process.nextTick(() => {
+                port.isOpen = true;
+                callback();
+            });
+            return port;
+        });
+        const closeErrors = [];
+        com.onPortClosed = error => closeErrors.push(error);
+        await com.open('fake');
+        const previousSession = com.sessionId;
+        port.isOpen = false;
+        port.emit('close');
+        expect(com.sessionId).to.be.greaterThan(previousSession);
+        expect(closeErrors).to.have.lengthOf(1);
+        await expect(com.writeAndDrain(Buffer.from(':A\n'))).to.be.rejectedWith('not ready');
     });
 });
