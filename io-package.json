@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "vedirect",
-    "version": "0.5.0",
+    "version": "0.5.1",
     "news": {
+      "0.5.1": {
+        "en": "Changed Dependabot auto-merge to the safe `pull_request` trigger; updated `@iobroker/testing` to 6.3.2 and adapter-core to 3.4.3.\nSupport virtual serial endpoints without a modem-control ioctl (`ENOTTY`); other set errors remain fatal.\nAdd a Pi 4 benchmark for sampling, TTL, CPU, and Redis state writes.\nProvide an English main README, retain the German documentation separately, and complete the admin translations.",
+        "de": "Dependabot Auto-Merge wurde zum sicheren Pull_Request-Trigger geändert, @iobroker /testing auf 6.3.2 und Adapter-Core auf 3.4.3.\nUnterstützt serielle Endgeräte ohne Modemsteuerung ioctl (`ENOTTY`); andere Setfehler bleiben fatal.\nFüge einen Pi 4-Benchmark für Sampling, TTL, CPU und Redis State Writes hinzu.\nGeben Sie eine englische README-Datei an, bewahren Sie die deutsche Dokumentation separat auf.",
+        "ru": "Автоматическое объединение Dependabot изменено на безопасный триггер `pull_request`; обновлено '@iobroker /testing `до 6.3.2, а ядро адаптера до 3.4.3.\nПоддержка виртуальных последовательных конечных точек без ioctl, управляемого модемом (`ENOTTY`); другие ошибки набора остаются фатальными.\nДобавьте тест Pi 4 для сэмплирования, записи состояния TTL, процессора и Redis.\nПредоставьте основной файл README на английском языке, сохраните документацию на немецком языке отдельно и завершите переводы для администраторов.",
+        "pt": "Mudou a mesclagem automática de Dependabot para o gatilho seguro `pull_request`; `@iobroker /testing` para 6.3.2 e adapter-core para 3.4.3.\nSuporta endpoints seriais virtuais sem um modem ioctl (`ENOTTY`); outros erros de set são fatais.\nAdicione um benchmark Pi 4 para gravação de dados TTL, CPU e Redis.\nForneça um README principal em inglês, guarde a documentação alemã e conclua as traduções administrativas.",
+        "nl": "De automatische samenvoeging van Dependabot is gewijzigd naar de veilige `pull_request` trigger; `@iobroker /testing` bijgewerkt naar 6.3.2 en adapter-core naar 3.4.3.\nOndersteuning voor virtuele seriële eindpunten zonder ioctl met modembesturing (`ENOTTY`); andere setfouten blijven fataal.\nVoeg een Pi 4-benchmark toe voor sampling, TTL, CPU en Redis-state writing.\nZorg voor een Engelse README, bewaar de Duitse documentatie apart en voltooi de administratieve vertalingen.",
+        "fr": "Dependabot a remplacé la fusion automatique par le déclencheur sécurisé « pull_request » ; @iobroker /testing est passé en 6.3.2 et adapter-core en 3.4.3.\nSupportez les terminaux série virtuels sans ioctl de contrôle de modem (« ENOTTY ») ; les autres erreurs restent fatales.\nAjoutez un test Pi 4 pour le sampling, le TTL, le CPU et les écritures Redis.\nFournissez un README principal en anglais, conservez la documentation allemande séparément et terminez les traductions.",
+        "it": "Dependabot ha cambiato il trigger sicuro «pull_request»; aggiornato @iobroker /testing a 6.3.2 e adapter-core a 3.4.3.\nSupporta endpoint seriali virtuali senza modem ioctl (`ENOTTY`); altri errori di set sono fatali.\nAggiunga un benchmark Pi 4 per sampling, TTL, CPU e Redis.\nFornisca un README principale in inglese, conservi la documentazione tedesca a parte e completi le traduzioni.",
+        "es": "Cambió la fusión automática del Dependabot por el disparador seguro `pull_request`; actualizó `@iobroker /testing` a 6.3.2 y adapter-core a 3.4.3.\nSoporta terminales seriales virtuales sin control de módem ioctl («ENOTTY»); otros errores de ajuste son mortales.\nAñada una referencia de Pi 4 para muestreo, TTL, CPU y estado de Redis.\nProporcione un README principal en inglés, guarde la documentación en alemán por separado y complete las traducciones administrativas.",
+        "pl": "Zmieniono automatyczne scalanie Dependabot na bezpieczny wyzwalacz `pull_request`; zaktualizowano `@iobroker /testing` do 6.3.2 i rdzeń adaptera do wersji 3.4.3.\nObsługa wirtualnych szeregowych punktów końcowych bez sterowania modemem ioctl (`ENOTTY`); inne błędy zestawu pozostają śmiertelne.\nDodaj test porównawczy Pi 4 do zapisów próbkowania, zapisów stanu TTL, CPU i Redis.\nZapewnij angielski główny README, zachowaj niemiecką dokumentację osobno i uzupełnij tłumaczenia administratora.",
+        "uk": "Змінено автоматичне об'єднання Dependabot на безпечний тригер `pull_request`; оновлено `@iobroker /testing` до 6.3.2 та адаптер-ядро до 3.4.3.\nПідтримка віртуальних послідовних кінцевих точок без керування модемом ioctl (`ENOTTY`); інші помилки набору залишаються фатальними.\nДодайте еталон Pi 4 для вибірки, TTL, CPU та записів стану Redis.\nНадайте основний README англійською мовою, збережіть німецьку документацію окремо та завершіть переклади адміністратора.",
+        "zh-cn": "将 Dependabot 自动合并更改为安全的 “pull_request` 触发器；将 @iobroker /testing” 更新为 6.3.2，将适配器核心更新为 3.4.3。\n支持没有调制解调器控制 ioctl（“ENOTTY”）的虚拟串行端点；其他设置错误仍然是致命的。\n为采样、TTL、CPU 和 Redis 状态写入添加 Pi 4 基准测试。\n提供英文主自述文件，单独保留德语文档，然后完成管理员翻译。"
+      },
       "0.5.0": {
         "en": "Optionaler HEX-Get-Client mit offiziellen Rev.-18-Fixtures, strenger Register-/Response-Prüfung und read-only Hardwareprobe.\nOptionaler Charger-on/off- und dynamischer Charge-Current-Control mit Read-after-Write, Capability-Gate und begrenzten Queues.\nInstanzgebundener Stromlimit-Supervisor, Session-Invalidierung ohne blindes Retry sowie umfangreiche Fake-/Serial-/Zwei-Instanz-Tests.",
         "de": "Optionaler Hex-Get-Client mit offiziellen Rev.-18-Fixtures, strengerem Register-/Response-Test und Read-Only-Hardwaretest.\nOptionales Ein-/Ausschalten und dynamischer Ladestromregler mit Read-After-Write, Capability-Gate und begrenzten Queues.\nInstanzgebundener Stromlimit-Supervisor, Session-Invalidierung ohne blindes Retry sowie umfangreiche Fake/Serial-/Two Instance Tests.",
@@ -80,19 +93,6 @@
         "pl": "Napraw problem z działkiem, błąd podczas otwierania portu USB",
         "zh-cn": "修复哨兵问题，打开USB端口时出错",
         "uk": "Виправлено проблему Sentry, помилка відкриття USB-порту"
-      },
-      "0.1.0": {
-        "en": "error in device mode corrected",
-        "de": "Fehler im Gerätemodus behoben",
-        "ru": "исправлена ошибка в режиме устройства",
-        "pt": "erro no modo do dispositivo corrigido",
-        "nl": "fout in apparaatmodus gecorrigeerd",
-        "fr": "erreur en mode appareil corrigée",
-        "it": "errore nella modalità dispositivo corretto",
-        "es": "error en modo dispositivo corregido",
-        "pl": "poprawiony błąd w trybie urządzenia",
-        "zh-cn": "设备模式下的错误已更正",
-        "uk": "виправлено помилку в режимі пристрою"
       }
     },
     "titleLang": {

@@ -126,8 +126,7 @@ The complete audit is documented in [docs/audit-2026-11-17.md](docs/audit-2026-1
 The production dependency audit has no findings. The development toolchain audit still reports a transitive `picomatch` ReDoS issue through `tinyglobby`/TypeScript-ESLint, for which no corrected compatible release chain was available at the time of testing. It affects only development globbing with potentially malicious patterns, not adapter operation or VE.Direct processing.
 
 ## Changelog
-
-### **WORK IN PROGRESS**
+### 0.5.1 (2026-11-18)
 
 - (joerg) Changed Dependabot auto-merge to the safe `pull_request` trigger; updated `@iobroker/testing` to 6.3.2 and adapter-core to 3.4.3.
 - (joerg) Support virtual serial endpoints without a modem-control ioctl (`ENOTTY`); other set errors remain fatal.
