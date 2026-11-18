@@ -41,6 +41,7 @@ Zusätzlich wurde Auto-Resume nach Reconnect verworfen: Nach Verbindungsverlust 
 
 ## PTY-spezifische Plattformgrenzen
 
+- Die GitHub-macOS-Jobs wurden wiederholt ohne Runner und ohne Schritte abgebrochen (`runner_id: 0`, `steps: []`). Das ist kein Testfehler. Zur Absicherung wurde `npm run test:all` auf demselben macOS-Host zusätzlich mit **Node 22.23.5** und **24.22.3** ausgeführt; beide vollständigen Läufe mit 385 JS-/Package- und 330 Integrationstests waren erfolgreich. Node 26 wurde lokal ebenfalls mit `npm run test:all` geprüft.
 - macOS kann das Modem-Control-Setzen eines `os.openpty()`-Slaves mit `ENOTTY` ablehnen; der Harness ignoriert nur diesen hardwarebezogenen PTY-Fehler. Open, Lock, Read, Write, Drain und Close bleiben nativ.
 - Node 26 benötigt nach echtem `readable` gelegentlich einen `setImmediate`-Turn für die Promise-Fortsetzung. Es werden keine Bytes oder Reads ersetzt.
 - macOS liefert nach Master-Close wiederholt `read() = 0`, ohne dass SerialPort 12 daraus einen Close erkennt. Der PTY-Reconnect verwendet dort explizit `VeDirectCom.close()`; unter Linux bleibt der native Hangup-Pfad aktiv.
