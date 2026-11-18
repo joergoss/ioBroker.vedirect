@@ -1,186 +1,199 @@
 {
-    "common": {
-        "name": "vedirect",
-        "version": "0.3.3",
-        "news": {
-            "0.3.3": {
-                "en": "Repository checker compliance updates\nUpdate dependencies for Node.js 18+ compatibility",
-                "de": "Anpassungen für die Repository-Prüfung\nAbhängigkeiten für Node.js 18+ aktualisiert",
-                "ru": "Обновления для соответствия проверке репозитория\nОбновлены зависимости для совместимости с Node.js 18+",
-                "pt": "Atualizações de conformidade com o verificador de repositório\nDependências atualizadas para compatibilidade com Node.js 18+",
-                "nl": "Aanpassingen voor de repository checker\nAfhankelijkheden bijgewerkt voor Node.js 18+ compatibiliteit",
-                "fr": "Mises à jour de conformité au vérificateur de dépôt\nDépendances mises à jour pour la compatibilité Node.js 18+",
-                "it": "Aggiornamenti di conformità al controllo del repository\nDipendenze aggiornate per la compatibilità con Node.js 18+",
-                "es": "Actualizaciones de conformidad con el verificador del repositorio\nDependencias actualizadas para compatibilidad con Node.js 18+",
-                "pl": "Aktualizacje zgodności z kontrolą repozytorium\nZaktualizowano zależności pod kątem zgodności z Node.js 18+",
-                "uk": "Оновлення для відповідності перевірці репозиторію\nОновлено залежності для сумісності з Node.js 18+",
-                "zh-cn": "仓库检查合规性更新\n更新依赖项以兼容 Node.js 18+"
-            },
-            "0.3.0": {
-                "en": "Bugfixes\n([Andiling](https://github.com/andiling)) Update to support Protocol Version 3.33",
-                "de": "Bugfixes\n[Andiling](https://github.com/andiling) Unterstützung für Protokollversion 3.33",
-                "ru": "Бугфиксы\n[Andiling](https://github.com/andiling) Обновление для поддержки версии протокола 3.33",
-                "pt": "Bugfixs\n[Andiling] (https://github.com/andiling) Atualização para suporte Protocolo Versão 3.33",
-                "nl": "Bugfix\n_ Update om Protocol Version 3.33",
-                "fr": "Bugfixes\n[Andiling](https://github.com/andiling) Mise à jour pour appuyer la version 3.33 du Protocole",
-                "it": "Bugfix\n[Andiling](https://github.com/andiling) Aggiornamento al supporto Protocollo Versione 3.33",
-                "es": "Bugfixes\n[Andiling](https://github.com/andiling) Update to support Protocol Version 3.33",
-                "pl": "Bugfix\n(Andiling) (ang.). Użycie wersji 3.33",
-                "uk": "Помилки\n[Антилінг](https://github.com/andiling) Оновлення для підтримки протоколу Версія 3.33",
-                "zh-cn": "Bugfix\n[导言](http://github.com/andiling) 支助议定书的更新333"
-            },
-            "0.2.0": {
-                "en": "Code optimization\n([Andiling](https://github.com/andiling)) Add new product names of Vedirect\n([Andiling](https://github.com/andiling)) Add option to admin for state expiration\nUpdate dependencies * testing for NodeJS 18/20",
-                "de": "Codeoptimierung\n[Andiling](https://github.com/andiling) Neue Produktnamen von Vedirect hinzufügen\n[Andiling](https://github.com/andiling) Fügen Sie die Option zu admin für State Exiration\nUpdate-Abhängigkeiten * Test auf NodeJS 18/20",
-                "ru": "Оптимизация кода\n[Andiling](https://github.com/andiling) Добавить новые названия продуктов Vedirect\n[Andiling](https://github.com/andiling) Добавьте опцию в админ для истечения срока действия государства\nОбновить зависимости * тестирование для NodeJS 18/20",
-                "pt": "Otimização de código\n[Andiling] (https://github.com/andiling) Adicionar novos nomes de produtos de Vedirect\n[Andiling] (https://github.com/andiling) Adicionar opção para admin para expiração do estado\nDependências de atualização * testes para NodeJS 18/20",
-                "nl": "Code optimulatie\n_ Voeg nieuwe productnamen toe van Verig\n_ Voeg de optie toe voor verval\nQuality over Quantity (QoQ) Releases Vertaling:",
-                "fr": "Optimisation du code\n[Andiling](https://github.com/andiling) Ajouter de nouveaux noms de produits de Vedirect\n[Andiling](https://github.com/andiling) Ajouter l'option d'administration pour l'expiration de l'état\nMise à jour des dépendances * tests pour NodeJS 18/20",
-                "it": "Ottimizzazione del codice\n[Andiling](https://github.com/andiling) Aggiungi nuovi nomi di prodotto di Vedirect\n[Andiling](https://github.com/andiling) Aggiungi l'opzione per admin per la scadenza dello stato\nAggiornamento dipendenze * test per NodeJS 18/20",
-                "es": "Optimización del código\n[Andiling](https://github.com/andiling) Añadir nuevos nombres de productos de Vedirect\n[Andiling](https://github.com/andiling) Añadir opción a admin para caducidad del estado\nActualizar las dependencias * pruebas para NodeJS 18/20",
-                "pl": "Optymalizacja kodu\n(Andiling) (ang.). Nowe nazwy produktów\n(Andiling) (ang.). Addd option for admin for the state expiration (ang.)\nRezultatem programu jest NodeJS 18/2018",
-                "uk": "Оптимізація коду\n[Антилінг](https://github.com/andiling) Додати нові імена продуктів Vedirect\n[Антилінг](https://github.com/andiling) Додати параметр до адміністратора для закінчення терміну дії держави\nОновлення залежностей * тестування на NodeJS 18/20",
-                "zh-cn": "守则的优化\n[导言](http://github.com/andiling) 新产品名称\n[导言](http://github.com/andiling) 增加国家到期期的专注\n最新受扶养人* 无助于18/20"
-            },
-            "0.1.2": {
-                "en": "Fix sentry issue, error in opening USB-Port",
-                "de": "Behebung des Wachproblems, Fehler beim Öffnen des USB-Anschlusses",
-                "ru": "Исправить проблему с часовым, ошибка при открытии USB-порта",
-                "pt": "Corrigir problema de sentinela, erro ao abrir a porta USB",
-                "nl": "Fix schildwachtkwestie, fout bij het openen van de USB-poort",
-                "fr": "Correction d'un problème de sentinelle, erreur lors de l'ouverture du port USB",
-                "it": "Risolto il problema della sentinella, errore nell'apertura della porta USB",
-                "es": "Solucionar problema de centinela, error al abrir el puerto USB",
-                "pl": "Napraw problem z działkiem, błąd podczas otwierania portu USB",
-                "zh-cn": "修复哨兵问题，打开USB端口时出错",
-                "uk": "Виправлено проблему Sentry, помилка відкриття USB-порту"
-            },
-            "0.1.0": {
-                "en": "error in device mode corrected",
-                "de": "Fehler im Gerätemodus behoben",
-                "ru": "исправлена ошибка в режиме устройства",
-                "pt": "erro no modo do dispositivo corrigido",
-                "nl": "fout in apparaatmodus gecorrigeerd",
-                "fr": "erreur en mode appareil corrigée",
-                "it": "errore nella modalità dispositivo corretto",
-                "es": "error en modo dispositivo corregido",
-                "pl": "poprawiony błąd w trybie urządzenia",
-                "zh-cn": "设备模式下的错误已更正",
-                "uk": "виправлено помилку в режимі пристрою"
-            },
-            "0.0.8": {
-                "en": "Propper connection state handling and reconnect when lost",
-                "de": "Ordnungsgemäße Behandlung des Verbindungsstatus und Wiederverbindung bei Verlust",
-                "ru": "Обработка состояния соединения Propper и переподключение в случае потери",
-                "pt": "Manuseie o estado da conexão e reconecte-se quando for perdido",
-                "nl": "Correcte afhandeling van de verbindingsstatus en opnieuw verbinden bij verlies",
-                "fr": "Gestion correcte de l'état des connexions et reconnexion en cas de perte",
-                "it": "Gestione dello stato di connessione del propper e ricollegamento in caso di perdita",
-                "es": "Manejo apropiado del estado de conexión y reconexión cuando se pierde",
-                "pl": "Obsługa stanu połączenia propper i ponowne połączenie w przypadku utraty",
-                "zh-cn": "支持器连接状态处理，丢失时重新连接",
-                "uk": "Правильна обробка стану з'єднання та повторне підключення при втраті"
-            }
-        },
-        "titleLang": {
-            "en": "Vedirect",
-            "de": "Vedirect",
-            "ru": "Vedirect",
-            "pt": "Vedirect",
-            "nl": "Vedirect",
-            "fr": "Vedirect",
-            "it": "Vedirect",
-            "es": "Vedirecto",
-            "pl": "Vedirect",
-            "uk": "Vedirect",
-            "zh-cn": "Vedirect"
-        },
-        "desc": {
-            "en": "Robust read-only VE.Direct data from Victron devices",
-            "de": "Robuste Read-only-VE.Direct-Daten von Victron-Geräten",
-            "ru": "Считайте данные VE.direct с Victron Solar Chargers.",
-            "pt": "Leia os dados VE.direct dos Victron Solar Chargers",
-            "nl": "Lees VE.direct-gegevens van Victron Solar Chargers",
-            "fr": "Lire les données VE.direct de Victron Solar Chargers",
-            "it": "Leggi i dati VE.direct dai caricatori solari Victron",
-            "es": "Lea los datos VE.direct de los cargadores solares Victron",
-            "pl": "Odczytaj dane VE.direct z ładowarki słonecznej Victron",
-            "uk": "Читайте дані VE.direct з Victron Solar Chargers",
-            "zh-cn": "从Victron太阳能充电器读取VE.direct数据"
-        },
-        "authors": [
-            "DutchmanNL <rdrozda@hotmail.com>"
-        ],
-        "keywords": [
-            "energy",
-            "connection",
-            "pv",
-            "solar",
-            "victron"
-        ],
-        "licenseInformation": {
-            "license": "MIT",
-            "type": "free"
-        },
-        "platform": "Javascript/Node.js",
-        "icon": "vedirect.png",
-        "enabled": true,
-        "extIcon": "https://raw.githubusercontent.com/joergoss/ioBroker.vedirect/main/admin/vedirect.png",
-        "readme": "https://github.com/joergoss/ioBroker.vedirect/blob/main/README.md",
-        "loglevel": "info",
-        "mode": "daemon",
-        "type": "energy",
-        "tier": 3,
-        "compact": true,
-        "connectionType": "local",
-        "dataSource": "push",
-        "adminUI": {
-            "config": "materialize"
-        },
-        "plugins": {
-            "sentry": {
-                "dsn": "https://794122c799494668aaf5f1c341dfd1c6@sentry.iobroker.net/29"
-            }
-        },
-        "dependencies": [
-            {
-                "js-controller": ">=6.0.11"
-            }
-        ],
-        "globalDependencies": [
-            {
-                "admin": ">=7.6.20"
-            }
-        ]
+  "common": {
+    "name": "vedirect",
+    "version": "0.4.0",
+    "news": {
+      "0.4.0": {
+        "en": "Atomarer VE.Direct-3.34-Parser mit Checksum-, HEX-, Multiblock- und Recovery-Tests (#1).\nFeldskalierungen, Sentinels, Bitfelder, Firmwaretypen, Rollen und Metadaten korrigiert (#1).\nInstanzgebundener SerialPort-12-Lifecycle, Reconnect, sichere State-Queues und Unload (#2).\nFrame-Sampling, Expire-/Changed-Verhalten und Mehrinstanzbetrieb korrigiert (#2).\nDummy-Test durch reale Protokoll-/Lifecycle-/Adaptertests ersetzt; CI und Dokumentation erweitert (#3).\nNode.js 22+ vorausgesetzt, CI auf Node.js 22/24/26 erweitert und Release-Tooling modernisiert.",
+        "de": "Atomars VE.Direct-3.34-Parser with Checksum-, HEX-, Multiblock and Recovery-Tests (#1).\nFeldskalierungen, Sentinels, Bitfelder, Firmwaretypen, Rollen und Metadaten korrigiert (#1).\nInstanzed SerialPort-12-Lifecycle, Reconnect, Secure State-Queues und Unload (#2).\nFrame-Sampling, Expire-/Changed-Verhalten und Mehrinstanzbetrieb korrigiert (#2).\nDummy-Test durch echte Protokoll-/Lifecycle-/Adaptertests ersetzt; CI and Documentation expanded (#3).\nNode.js 22+, CI on Node.js 22/24/26 erweitert und das Release-Tooling modernisiert.",
+        "ru": "Анализатор Atomarer ve.Direct-3.34 с контрольными суммами, тестами HEX, многоблочными тестами и тестами восстановления (#1).\nИсправлены масштабирование полей, сентинели, битовые поля, типы микропрограмм, роли и метаданные (#1).\nИнстанс связывает SerialPort-12 с жизненным циклом, повторным подключением, безопасными очередями состояний и выгрузкой (#2).\nИсправлены выборка кадров, просроченные и измененные версии кадров (#2).\nПерезапущен фиктивный тест с помощью реальных тестов на протокол/жизненный цикл/адаптер; пользовательский интерфейс и документация обновлены (#3).\nNode.js выпущен более 22 версий, CI переработан на Node.js 22/24/26 и модернизирован инструментарий выпуска.",
+        "pt": "Automatiza o parser VE.Direct-3.34 com testes Checksum, HEX, Multiblock e Recovery (#1).\nCorrige escalas de campo, Sentinels, campos de bits, tipos de firmware e metadados (#1).\nInstale SerialPort-12-Lifecycle, Reconnect, Secure State-Queues e Unload (#2).\nFrame Sampling, Expire-/Changed e Multi-Instance Corrigido (#2).\nDummy-Test é substituída por testes reais de protocolo/ciclo de vida/adaptador; CI e documentação (#3).\nNode.js 22+ preset, CI auf Node.js 22/24/26 e moderniza o Release-Tooling.",
+        "nl": "Atomars ve.Direct-3.34-parser met checksum-, HEX-, Multiblock- en Recovery-tests (#1).\nFeldskalierungen, Sentinels, Bitfelder, Firmwaretypen, Rollen en Metadaten zijn gecorrigeerd (#1).\nInstanzgebundener SerialPort-12-Lifecycle, Reconnect, sichere State-Queues und Unload (#2).\nFrame-sampling, Expire-/Changed-Verhalten und Mehrinstanzbetrieb corrigiert (#2).\nDummy-test via echte protocoll-/Lifecycle-/Adaptertests verwijderd; CI und Documumentation erweitert (#3).\nNode.js 22+ versies, CI auf Node.js 22/24/26 bijgewerkt en Release-Tooling gemoderniseerd.",
+        "fr": "Analyseur automatique VE.Direct-3.34 avec tests Checksum, HEX, Multiblock et Recovery (#1).\nFeldskalierungen, Sentinels, Bitfelder, Firmwaretypen, Rollen und Metadaten korrigiert (#1).\nInstanzgebundener SerialPort-12-Lifecycle, Reconnect, sichere State-Queues und Unload (#2).\nFrame-Sampling, Expire-/Changed-Verhalten und Mehrinstanzbetrieb korrigiert (#2).\nDummy-Test durch reale Protokoll-/Lifecycle-/Adaptertests ersetzt ; CI und Dokumentation erweitert (#3).\nNode.js 22+ vorausgesetzt, CI auf Node.js 22/24/26 erweitert und Release-Tooling modernisiert.",
+        "it": "Parser Atomar VE.Direct-3.34 con test checksum, HEX, multiblock e recovery (#1).\nFieldskalierungs, Sentinels, Bitfelder, tipi di firmware, ruoli e metadati corrotti (#1).\nIstanze integrate SerialPort-12-Lifecycle, Reconnect, code e Unload (#2).\nFrame Sampling, Expire-/Changed-Stage e MultiInstance Corretto (#2).\nSostituisce test fittizi con protocollo/ciclo di vita/adattatore reale; CI e documentazione estesi (#3).\nNode.js 22+ preset, CI su Node.js 22/24/26 e Release Tooling modernizzato.",
+        "es": "Analizador Atomarer VE.Direct-3.34 con pruebas de suma, HEX, multibloque y recuperación (#1).\nFeldskalierungen, Sentinels, Bitfelder, Firmwaretypen, Rollen und Metadaten korrigiert (#1).\nInstanzgebundener SerialPort-12 Lifecycle, Reconnect, sichere State-Queues and Unload (#2).\nFrame-Sampling, Expire-/Changed-Verhalten und Mehrinstanzbetrieb korrigiert (#2).\nDummy-Test durch reale Protokoll-/Lifecycle-/Adaptertests ersetzt; CI und Dokumentation erweitert (#3).\nNode.js 22+ vorausgesetzt, CI auf Node.js 22/24/26 erweitert und Release-Tooling modernisiert.",
+        "pl": "Atomowanie parserów VE.DIRECT-3.34 za pomocą testów sum kontrolnych, HEX, wieloblokowych i odzyskiwania (#1).\nSkorygowane skale polowe, wartowniki, pola bitowe, typy oprogramowania, rolki i metadane (#1).\nZintegrowany cykl życia SerialPort 12, ponowne połączenie, wyszukiwanie kolejek stanu i rozładuj (#2).\nSkorygowano próbkowanie ramek, wygaśnięć/zmienione czasy i więcej operacji (#2).\nTest Dummy'ego zastępuje prawdziwy protokoł/cykl życiowy/testów adaptera; Rozwija CI i dokumentację (#3).\nNode.js 22+, rozszerzono CI na Node.js 22/24/26 i zmodernizowano narzędzia Release-Tooling.",
+        "uk": "Атомний парсер VE.DIRECT-3.34 з контрольною сумою, HEX, багатоблоковими та відновлювальними тестами (#1).\nВиправлено масштаби поля, сторожі, бітові поля, типи прошивки, ролики та метадані (#1).\nІнсталяція SerialPort-12-Lifecycle, Повторне підключення, безпечні черги стану та вивантаження (#2).\nВиправлено дискретизацію кадрів, вичерпування/зміни та багатофункціональні операції (#2).\nФіктивний тест замінено реальними протоколами/життєвим циклом/адаптером; розширюється CI та документація (#3).\nЗапропонований Node.js 22+, розширюється CI на Node.js 22/24/26 та модернізується інструментарій випуску.",
+        "zh-cn": "Atomarer ve.direct-3.34 解析器，包含校验和、十六进制、多块和恢复测试 (#1)。\n修正了字段、哨兵、比特字段、固件类型、角色和元数据 (#1)。\nInstanzgebundener 串行端口 12 生命周期、重新连接、保护状态队列和卸载 (#2)。\n帧采样、过期/更改事件和更多实例运行已修复 (#2)。\n通过真正的协议/生命周期/适配器测试进行虚拟测试；扩展用户界面和文档 (#3)。\nNode.js 22+ vorausgesetzt，CI 在 Node.js 22/24/26 上进行了更新，并对发布工具进行了现代化改造。"
+      },
+      "0.3.3": {
+        "en": "Repository checker compliance updates\nUpdate dependencies for Node.js 18+ compatibility",
+        "de": "Anpassungen für die Repository-Prüfung\nAbhängigkeiten für Node.js 18+ aktualisiert",
+        "ru": "Обновления для соответствия проверке репозитория\nОбновлены зависимости для совместимости с Node.js 18+",
+        "pt": "Atualizações de conformidade com o verificador de repositório\nDependências atualizadas para compatibilidade com Node.js 18+",
+        "nl": "Aanpassingen voor de repository checker\nAfhankelijkheden bijgewerkt voor Node.js 18+ compatibiliteit",
+        "fr": "Mises à jour de conformité au vérificateur de dépôt\nDépendances mises à jour pour la compatibilité Node.js 18+",
+        "it": "Aggiornamenti di conformità al controllo del repository\nDipendenze aggiornate per la compatibilità con Node.js 18+",
+        "es": "Actualizaciones de conformidad con el verificador del repositorio\nDependencias actualizadas para compatibilidad con Node.js 18+",
+        "pl": "Aktualizacje zgodności z kontrolą repozytorium\nZaktualizowano zależności pod kątem zgodności z Node.js 18+",
+        "uk": "Оновлення для відповідності перевірці репозиторію\nОновлено залежності для сумісності з Node.js 18+",
+        "zh-cn": "仓库检查合规性更新\n更新依赖项以兼容 Node.js 18+"
+      },
+      "0.3.0": {
+        "en": "Bugfixes\n([Andiling](https://github.com/andiling)) Update to support Protocol Version 3.33",
+        "de": "Bugfixes\n[Andiling](https://github.com/andiling) Unterstützung für Protokollversion 3.33",
+        "ru": "Бугфиксы\n[Andiling](https://github.com/andiling) Обновление для поддержки версии протокола 3.33",
+        "pt": "Bugfixs\n[Andiling] (https://github.com/andiling) Atualização para suporte Protocolo Versão 3.33",
+        "nl": "Bugfix\n_ Update om Protocol Version 3.33",
+        "fr": "Bugfixes\n[Andiling](https://github.com/andiling) Mise à jour pour appuyer la version 3.33 du Protocole",
+        "it": "Bugfix\n[Andiling](https://github.com/andiling) Aggiornamento al supporto Protocollo Versione 3.33",
+        "es": "Bugfixes\n[Andiling](https://github.com/andiling) Update to support Protocol Version 3.33",
+        "pl": "Bugfix\n(Andiling) (ang.). Użycie wersji 3.33",
+        "uk": "Помилки\n[Антилінг](https://github.com/andiling) Оновлення для підтримки протоколу Версія 3.33",
+        "zh-cn": "Bugfix\n[导言](http://github.com/andiling) 支助议定书的更新333"
+      },
+      "0.2.0": {
+        "en": "Code optimization\n([Andiling](https://github.com/andiling)) Add new product names of Vedirect\n([Andiling](https://github.com/andiling)) Add option to admin for state expiration\nUpdate dependencies * testing for NodeJS 18/20",
+        "de": "Codeoptimierung\n[Andiling](https://github.com/andiling) Neue Produktnamen von Vedirect hinzufügen\n[Andiling](https://github.com/andiling) Fügen Sie die Option zu admin für State Exiration\nUpdate-Abhängigkeiten * Test auf NodeJS 18/20",
+        "ru": "Оптимизация кода\n[Andiling](https://github.com/andiling) Добавить новые названия продуктов Vedirect\n[Andiling](https://github.com/andiling) Добавьте опцию в админ для истечения срока действия государства\nОбновить зависимости * тестирование для NodeJS 18/20",
+        "pt": "Otimização de código\n[Andiling] (https://github.com/andiling) Adicionar novos nomes de produtos de Vedirect\n[Andiling] (https://github.com/andiling) Adicionar opção para admin para expiração do estado\nDependências de atualização * testes para NodeJS 18/20",
+        "nl": "Code optimulatie\n_ Voeg nieuwe productnamen toe van Verig\n_ Voeg de optie toe voor verval\nQuality over Quantity (QoQ) Releases Vertaling:",
+        "fr": "Optimisation du code\n[Andiling](https://github.com/andiling) Ajouter de nouveaux noms de produits de Vedirect\n[Andiling](https://github.com/andiling) Ajouter l'option d'administration pour l'expiration de l'état\nMise à jour des dépendances * tests pour NodeJS 18/20",
+        "it": "Ottimizzazione del codice\n[Andiling](https://github.com/andiling) Aggiungi nuovi nomi di prodotto di Vedirect\n[Andiling](https://github.com/andiling) Aggiungi l'opzione per admin per la scadenza dello stato\nAggiornamento dipendenze * test per NodeJS 18/20",
+        "es": "Optimización del código\n[Andiling](https://github.com/andiling) Añadir nuevos nombres de productos de Vedirect\n[Andiling](https://github.com/andiling) Añadir opción a admin para caducidad del estado\nActualizar las dependencias * pruebas para NodeJS 18/20",
+        "pl": "Optymalizacja kodu\n(Andiling) (ang.). Nowe nazwy produktów\n(Andiling) (ang.). Addd option for admin for the state expiration (ang.)\nRezultatem programu jest NodeJS 18/2018",
+        "uk": "Оптимізація коду\n[Антилінг](https://github.com/andiling) Додати нові імена продуктів Vedirect\n[Антилінг](https://github.com/andiling) Додати параметр до адміністратора для закінчення терміну дії держави\nОновлення залежностей * тестування на NodeJS 18/20",
+        "zh-cn": "守则的优化\n[导言](http://github.com/andiling) 新产品名称\n[导言](http://github.com/andiling) 增加国家到期期的专注\n最新受扶养人* 无助于18/20"
+      },
+      "0.1.2": {
+        "en": "Fix sentry issue, error in opening USB-Port",
+        "de": "Behebung des Wachproblems, Fehler beim Öffnen des USB-Anschlusses",
+        "ru": "Исправить проблему с часовым, ошибка при открытии USB-порта",
+        "pt": "Corrigir problema de sentinela, erro ao abrir a porta USB",
+        "nl": "Fix schildwachtkwestie, fout bij het openen van de USB-poort",
+        "fr": "Correction d'un problème de sentinelle, erreur lors de l'ouverture du port USB",
+        "it": "Risolto il problema della sentinella, errore nell'apertura della porta USB",
+        "es": "Solucionar problema de centinela, error al abrir el puerto USB",
+        "pl": "Napraw problem z działkiem, błąd podczas otwierania portu USB",
+        "zh-cn": "修复哨兵问题，打开USB端口时出错",
+        "uk": "Виправлено проблему Sentry, помилка відкриття USB-порту"
+      },
+      "0.1.0": {
+        "en": "error in device mode corrected",
+        "de": "Fehler im Gerätemodus behoben",
+        "ru": "исправлена ошибка в режиме устройства",
+        "pt": "erro no modo do dispositivo corrigido",
+        "nl": "fout in apparaatmodus gecorrigeerd",
+        "fr": "erreur en mode appareil corrigée",
+        "it": "errore nella modalità dispositivo corretto",
+        "es": "error en modo dispositivo corregido",
+        "pl": "poprawiony błąd w trybie urządzenia",
+        "zh-cn": "设备模式下的错误已更正",
+        "uk": "виправлено помилку в режимі пристрою"
+      },
+      "0.0.8": {
+        "en": "Propper connection state handling and reconnect when lost",
+        "de": "Ordnungsgemäße Behandlung des Verbindungsstatus und Wiederverbindung bei Verlust",
+        "ru": "Обработка состояния соединения Propper и переподключение в случае потери",
+        "pt": "Manuseie o estado da conexão e reconecte-se quando for perdido",
+        "nl": "Correcte afhandeling van de verbindingsstatus en opnieuw verbinden bij verlies",
+        "fr": "Gestion correcte de l'état des connexions et reconnexion en cas de perte",
+        "it": "Gestione dello stato di connessione del propper e ricollegamento in caso di perdita",
+        "es": "Manejo apropiado del estado de conexión y reconexión cuando se pierde",
+        "pl": "Obsługa stanu połączenia propper i ponowne połączenie w przypadku utraty",
+        "zh-cn": "支持器连接状态处理，丢失时重新连接",
+        "uk": "Правильна обробка стану з'єднання та повторне підключення при втраті"
+      }
     },
-    "native": {
-        "byUSB": true,
-        "USBDevice": "",
-        "expireTime": 0,
-        "messageBuffer": 0
+    "titleLang": {
+      "en": "Vedirect",
+      "de": "Vedirect",
+      "ru": "Vedirect",
+      "pt": "Vedirect",
+      "nl": "Vedirect",
+      "fr": "Vedirect",
+      "it": "Vedirect",
+      "es": "Vedirecto",
+      "pl": "Vedirect",
+      "uk": "Vedirect",
+      "zh-cn": "Vedirect"
     },
-    "objects": [],
-    "instanceObjects": [
-        {
-            "_id": "info",
-            "type": "channel",
-            "common": {
-                "name": "Information"
-            },
-            "native": {}
-        },
-        {
-            "_id": "info.connection",
-            "type": "state",
-            "common": {
-                "role": "indicator.connected",
-                "name": "Device or service connected",
-                "type": "boolean",
-                "read": true,
-                "write": false,
-                "def": false
-            },
-            "native": {}
-        }
+    "desc": {
+      "en": "Robust read-only VE.Direct data from Victron devices",
+      "de": "Robuste Read-only-VE.Direct-Daten von Victron-Geräten",
+      "ru": "Считайте данные VE.direct с Victron Solar Chargers.",
+      "pt": "Leia os dados VE.direct dos Victron Solar Chargers",
+      "nl": "Lees VE.direct-gegevens van Victron Solar Chargers",
+      "fr": "Lire les données VE.direct de Victron Solar Chargers",
+      "it": "Leggi i dati VE.direct dai caricatori solari Victron",
+      "es": "Lea los datos VE.direct de los cargadores solares Victron",
+      "pl": "Odczytaj dane VE.direct z ładowarki słonecznej Victron",
+      "uk": "Читайте дані VE.direct з Victron Solar Chargers",
+      "zh-cn": "从Victron太阳能充电器读取VE.direct数据"
+    },
+    "authors": [
+      "DutchmanNL <rdrozda@hotmail.com>"
+    ],
+    "keywords": [
+      "energy",
+      "connection",
+      "pv",
+      "solar",
+      "victron"
+    ],
+    "licenseInformation": {
+      "license": "MIT",
+      "type": "free"
+    },
+    "platform": "Javascript/Node.js",
+    "icon": "vedirect.png",
+    "enabled": true,
+    "extIcon": "https://raw.githubusercontent.com/joergoss/ioBroker.vedirect/main/admin/vedirect.png",
+    "readme": "https://github.com/joergoss/ioBroker.vedirect/blob/main/README.md",
+    "loglevel": "info",
+    "mode": "daemon",
+    "type": "energy",
+    "tier": 3,
+    "compact": true,
+    "connectionType": "local",
+    "dataSource": "push",
+    "adminUI": {
+      "config": "materialize"
+    },
+    "plugins": {
+      "sentry": {
+        "dsn": "https://794122c799494668aaf5f1c341dfd1c6@sentry.iobroker.net/29"
+      }
+    },
+    "dependencies": [
+      {
+        "js-controller": ">=6.0.11"
+      }
+    ],
+    "globalDependencies": [
+      {
+        "admin": ">=7.6.20"
+      }
     ]
+  },
+  "native": {
+    "byUSB": true,
+    "USBDevice": "",
+    "expireTime": 0,
+    "messageBuffer": 0
+  },
+  "objects": [],
+  "instanceObjects": [
+    {
+      "_id": "info",
+      "type": "channel",
+      "common": {
+        "name": "Information"
+      },
+      "native": {}
+    },
+    {
+      "_id": "info.connection",
+      "type": "state",
+      "common": {
+        "role": "indicator.connected",
+        "name": "Device or service connected",
+        "type": "boolean",
+        "read": true,
+        "write": false,
+        "def": false
+      },
+      "native": {}
+    }
+  ]
 }
