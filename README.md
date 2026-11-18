@@ -4,144 +4,150 @@
 
 [![Test and Release](https://github.com/joergspoerl/ioBroker.vedirect/actions/workflows/test-and-release.yml/badge.svg)](https://github.com/joergspoerl/ioBroker.vedirect/actions/workflows/test-and-release.yml)
 
-Standardmäßig read-only ioBroker-Adapter für Victron-Geräte mit serieller VE.Direct-Schnittstelle. Optional unterstützt er strikt validierte HEX-Gets sowie einzeln freischaltbare SmartSolar-Steuerfunktionen. Dieses Repository ist ein Fork von [DrozmotiX/ioBroker.vedirect](https://github.com/DrozmotiX/ioBroker.vedirect) und enthält eine grundlegende Protokoll- und Lifecycle-Härtung.
+By default, this is a read-only ioBroker adapter for Victron devices with a serial VE.Direct interface. It optionally supports strictly validated HEX reads and individually enabled SmartSolar control functions. This repository is a fork of [DrozmotiX/ioBroker.vedirect](https://github.com/DrozmotiX/ioBroker.vedirect) and includes fundamental protocol and lifecycle hardening.
 
-## Funktionen
+A German version of this documentation is available in [README.de.md](README.de.md).
 
-- Byteorientierter, atomarer Parser nach **VE.Direct Protocol 3.34** und offizieller FAQ.
-- Modulo-256-Checksumme und Veröffentlichung erst nach einem gültigen vollständigen Block.
-- Alle 256 binären Checksumbytes, beliebige Serial-Chunk-Grenzen und mehrere Blöcke.
-- Kontrollierte Behandlung asynchroner HEX-Nachrichten und Wiederaufsynchronisation.
-- Strikte numerische Validierung; keine stillen `parseFloat`-Teilwerte, kein `NaN` und keine erfundenen Nullen.
-- Instanzgebundener SerialPort-12-Lifecycle mit Open-/Set-/Close-Timeouts, Reconnect und Late-Callback-Schutz.
-- PTY-/socat-Endpunkte ohne Modem-Control-Ioctl werden akzeptiert; andere Set-Fehler bleiben harte Open-Fehler.
-- `info.connection` folgt ausschließlich frischen gültigen Blöcken.
-- Objekt-Migration vor State-Schreiben sowie behandelte Promise-Fehler.
-- Frame-Sampling ohne Verlust einzelner Protokollfelder.
-- Mehrinstanzfähigkeit ohne globale Ports, Parser, Timer oder Buffer.
-- Optionaler HEX-Get-Zugriff mit Rev.-18-Checksumme, exakter Response-Zuordnung und fester Registerwhitelist.
-- Optionaler Charger-on/off- und dynamischer Charge-Current-Control mit Read-after-Write, Sicherheitsgrenzen und instanzgebundenem Refresh-Supervisor.
+This adapter uses Sentry libraries to automatically report exceptions and code errors to the developers. For more details and for information on how to disable error reporting, see the [Sentry plugin documentation](https://github.com/ioBroker/plugin-sentry#plugin-sentry). Sentry reporting is used starting with js-controller 3.0.
 
-## Unterstützte Geräte und Umfang
+## Features
 
-Die Feldregistry deckt die im bisherigen Adapter enthaltenen BMV-, MPPT-, Phoenix- und Orion-Felder ab, einschließlich SmartSolar-, SmartShunt- und VE.Direct-Phoenix-Daten. Die tatsächliche Feldverfügbarkeit hängt von Produkt und Firmware ab.
+- Byte-oriented, atomic parser according to **VE.Direct Protocol 3.34** and the official FAQ.
+- Modulo-256 checksum with publication only after a valid, complete block.
+- Coverage of all 256 binary checksum bytes, arbitrary serial chunk boundaries, and multiple blocks.
+- Controlled handling of asynchronous HEX messages and resynchronization.
+- Strict numeric validation; no silent partial `parseFloat` values, no `NaN`, and no invented zeroes.
+- Instance-scoped SerialPort 12 lifecycle with open/set/close timeouts, reconnect, and late-callback protection.
+- PTY/socat endpoints without a modem-control ioctl are accepted; other set errors remain fatal open errors.
+- `info.connection` is based exclusively on fresh, valid blocks.
+- Object migration before state writes and handled promise errors.
+- Frame sampling without losing individual protocol fields.
+- Multiple instances without global ports, parsers, timers, or buffers.
+- Optional HEX read access with revision 18 checksums, exact response matching, and a fixed register whitelist.
+- Optional charger on/off and dynamic charge-current control with read-after-write, safety limits, and an instance-scoped refresh supervisor.
 
-Der Adapter bleibt standardmäßig **read-only**. HEX-Gets und die Steuerfunktionen sind einzeln deaktiviert vorkonfiguriert. Es gibt keine allgemeine Roh-Register-, BMS-/Slave-, Spannungs- oder persistente Batterieeinstellungs-Steuerung. Details und Sicherheitsgrenzen stehen in [docs/hex-control.md](docs/hex-control.md).
+## Supported devices and scope
 
-Offizielle Referenzen:
+The field registry covers the BMV, MPPT, Phoenix, and Orion fields included in the previous adapter, including SmartSolar, SmartShunt, and VE.Direct Phoenix data. Actual field availability depends on the product and firmware.
+
+The adapter remains **read-only** by default. HEX reads and control functions are individually disabled in the default configuration. There is no generic raw-register, BMS/slave, voltage, persistent battery-setting, or load/relay control. Details and safety limits are documented in [docs/hex-control.md](docs/hex-control.md).
+
+Official references:
 
 - [VE.Direct Protocol 3.34](https://www.victronenergy.com/upload/documents/VE.Direct-Protocol-3.34.pdf)
 - [VE.Direct Protocol FAQ](https://www.victronenergy.com/live/vedirect_protocol:faq)
 
-Für den realen Betrieb von zwei SmartSolar-MPPTs einschließlich State-Übersicht und später möglicher HEX-Schreiboptionen siehe [docs/two-mppt.md](docs/two-mppt.md).
+For real-world operation of two SmartSolar MPPTs, including a state overview and possible future HEX write options, see [docs/two-mppt.md](docs/two-mppt.md).
 
-## Konfiguration
+## Configuration
 
-### Serielle Schnittstelle
+### Serial interface
 
-Den Gerätepfad eintragen, beispielsweise `/dev/ttyUSB0` oder einen stabilen `/dev/serial/by-id/...`-Pfad. Der Adapter verwendet **19200 Baud, 8N1**. Vor dem Start darf kein anderer Prozess denselben Port verwenden.
+Enter the device path, for example `/dev/ttyUSB0` or a stable `/dev/serial/by-id/...` path. The adapter uses **19200 baud, 8N1**. No other process may use the same port when the adapter starts.
 
-### State-Ablaufzeit (`expireTime`)
+### State expiration (`expireTime`)
 
-- `0`: Keine TTL; unveränderte Werte werden mit echter Changed-Optimierung behandelt.
-- Größer `0`: Bei als flüchtig markierten Messfeldern wird die TTL mit gültigen Frames erneuert.
-- Statische Identifikations-/Statusfelder besitzen je nach Felddefinition keine TTL.
+- `0`: No TTL; unchanged values use the actual changed-state optimization.
+- Greater than `0`: The TTL of measurement fields marked as volatile is renewed with valid frames.
+- Static identification and status fields may have no TTL, depending on the field definition.
 
-Die Ablaufzeit sollte bei aktiviertem Sampling deutlich größer als das Samplingintervall sein.
+When sampling is enabled, the expiration time should be significantly longer than the sampling interval.
 
-### Frame-Sampling (`messageBuffer`)
+### Frame sampling (`messageBuffer`)
 
-Der bisherige Konfigurationsname bleibt aus Kompatibilitätsgründen erhalten, das Verhalten ist korrigiert:
+The existing configuration name is retained for compatibility, but its behavior has been corrected:
 
-- `0`: Jeder gültige Block wird verarbeitet.
-- Größer `0`: Serielle Daten werden weiterhin vollständig geparst; für die State-Publikation werden vollständige Blöcke über das Intervall zusammengeführt. Der jeweils letzte Wert jedes Felds wird anschließend geschrieben.
-- Liveness und Reconnect werden durch Sampling nicht gedrosselt.
-- Bei erkanntem Verbindungsverlust wird ein noch nicht veröffentlichter Sample-Puffer verworfen; nach einem Reconnect beginnt ein neuer Puffer, sodass keine Werte über Verbindungsgrenzen hinweg vermischt werden.
-- Es werden keine einzelnen Zeilen oder History-Blöcke mehr verworfen.
+- `0`: Every valid block is processed.
+- Greater than `0`: Serial data is still parsed completely. For state publication, complete blocks are merged over the interval. The latest value of each field is then written.
+- Sampling does not throttle liveness detection or reconnects.
+- After a detected connection loss, an unpublished sample buffer is discarded. A new buffer starts after reconnecting so that values are never mixed across connection boundaries.
+- Individual lines and history blocks are no longer discarded.
 
-### Optionaler HEX-Zugriff
+### Optional HEX access
 
-Alle HEX-Funktionen sind standardmäßig deaktiviert. `hexReadEnabled` erlaubt ausschließlich eine feste Whitelist von Registerabfragen. `chargerControlEnabled` und `currentLimitControlEnabled` schalten die jeweiligen `control.*`-States separat frei.
+All HEX functions are disabled by default. `hexReadEnabled` permits only a fixed whitelist of register queries. `chargerControlEnabled` and `currentLimitControlEnabled` separately enable their respective `control.*` states.
 
-Die Stromsteuerung benötigt zusätzlich `currentLimitMax` als Adapter-Sicherheitsobergrenze und erneuert External-Control-Modus und Limit alle `currentLimitRefreshSeconds` (5–50 Sekunden) mit Read-after-Write. Ein Kommunikationsverlust ist **kein Fail-safe-Off**: Das Gerät kann auf Stand-alone und sein persistentes Maximalstrom-Setting zurückfallen.
+Current control additionally requires `currentLimitMax` as an adapter-side safety cap. It renews external-control mode and the current limit every `currentLimitRefreshSeconds` (5–50 seconds) with read-after-write. A communication loss is **not a fail-safe shutdown**: the device can return to stand-alone operation and its persistent maximum-current setting.
 
-Siehe [docs/hex-control.md](docs/hex-control.md) für States, Transaktionssemantik und das read-only Diagnoseprogramm.
+See [docs/hex-control.md](docs/hex-control.md) for states, transaction semantics, and the read-only diagnostic tool.
 
-## Verbindungs- und Fehlerverhalten
+## Connection and error behavior
 
-- `info.connection=true`: Innerhalb der letzten zehn Sekunden wurde ein checksumgültiger Block empfangen.
-- `info.connection=false`: Kein frischer gültiger Block, Open-/Serial-Fehler oder Adapterstopp.
-- Bei Datenstopp oder Disconnect wird der Port kontrolliert geschlossen und mit Cooldown erneut geöffnet.
-- Ungültige Checksummen und malformed bekannte Werte verändern keine Mess-States.
-- Nach erkanntem Verbindungsverlust werden keine gepufferten Werte mehr quittiert und keine TTL erneuert.
-- Wiederholte identische Serialfehler werden im Log gedrosselt.
-- Beim Unload wird vor dem Abschluss `info.connection=false` quittiert; der Unload-Abschluss ist zeitlich begrenzt, damit ein hängender Serial- oder Datenbankvorgang den Adapterstopp nicht blockiert.
+- `info.connection=true`: A checksum-valid block was received within the last ten seconds.
+- `info.connection=false`: No fresh valid block, an open/serial error, or adapter shutdown.
+- When data stops or the connection drops, the port is closed in a controlled manner and reopened after a cooldown.
+- Invalid checksums and malformed known values do not change measurement states.
+- After a detected connection loss, no buffered values are acknowledged and no TTL is renewed.
+- Repeated identical serial errors are rate-limited in the log.
+- During unload, `info.connection=false` is acknowledged before completion. Unload completion is time-bounded so that a hanging serial or database operation cannot block adapter shutdown.
 
-## Sonderwerte und Decodierung
+## Special values and decoding
 
-| Eingabe                    | Verhalten                                                                            |
-| -------------------------- | ------------------------------------------------------------------------------------ |
-| `---`                      | `null`; kein `NaN` oder Pseudo-Nullwert                                              |
-| `TTG=-1`                   | `TTG=null`, zusätzlich `TTGInfinite=true`                                            |
-| Normales TTG               | Weiterhin Minuten zur Wahrung der bestehenden State-API                              |
-| `FW` / `FWE`               | Strings; führende Nullen und Release-/Beta-Kennungen bleiben erhalten                |
-| `AR` / `WARN` / `OR`       | Alle gesetzten Bits werden gemeinsam decodiert; unbekannte Restbits bleiben sichtbar |
-| `Alarm` / `Relay` / `LOAD` | Case-insensitive, kanonische `ON`/`OFF`-Strings ohne bisherigen Typwechsel           |
-| Unbekanntes Feld           | Kein State; bekannte Werte desselben gültigen Blocks bleiben erhalten                |
+| Input                      | Behavior                                                                           |
+| -------------------------- | ---------------------------------------------------------------------------------- |
+| `---`                      | `null`; no `NaN` or pseudo-zero value                                             |
+| `TTG=-1`                   | `TTG=null`, plus `TTGInfinite=true`                                               |
+| Normal TTG                 | Remains minutes to preserve the existing state API                                 |
+| `FW` / `FWE`               | Strings; leading zeroes and release/beta identifiers are preserved                 |
+| `AR` / `WARN` / `OR`       | All set bits are decoded together; unknown remaining bits stay visible            |
+| `Alarm` / `Relay` / `LOAD` | Case-insensitive, canonical `ON`/`OFF` strings without changing the existing type |
+| Unknown field              | No state; known values from the same valid block are retained                     |
 
-## Migration und Kompatibilität
+## Migration and compatibility
 
-Bestehende State-IDs bleiben grundsätzlich erhalten. Objektdefinitionen werden beim ersten gültigen Empfang des jeweiligen Felds aktualisiert; Custom-Settings etwa für History/InfluxDB bleiben erhalten.
+Existing state IDs are generally retained. Object definitions are updated when the corresponding field is first received successfully; custom settings such as History or InfluxDB configuration are preserved.
 
-Wichtige Korrekturen gegenüber 0.1.2/0.3.x:
+Important corrections compared with 0.1.2/0.3.x:
 
-- `PPV`, `H21`, `H23`, `HSDS` und weitere numerische Felder werden zuverlässig als Zahlen geschrieben.
-- `H15`/`H16` besitzen nach der vorhandenen Umrechnung korrekt die Einheit `V` statt `mV`.
-- Energiezähler verwenden `kWh` und Energie-Rollen.
-- `FW`/`FWE` werden zur Erhaltung ihrer Protokollsemantik als Strings migriert.
-- `TTGInfinite` ist ein neuer synthetischer State.
-- Bereits historisch gespeicherte Werte werden nicht rückwirkend verändert.
+- `PPV`, `H21`, `H23`, `HSDS`, and other numeric fields are reliably written as numbers.
+- After the existing conversion, `H15`/`H16` correctly use the unit `V` instead of `mV`.
+- Energy counters use `kWh` and energy roles.
+- `FW`/`FWE` are migrated to strings to preserve their protocol semantics.
+- `TTGInfinite` is a new synthetic state.
+- Values already stored in history are not changed retroactively.
 
-## Entwicklung und Tests
+## Development and tests
 
-Voraussetzungen: Node.js 22 oder neuer, js-controller ≥6.0.11 und Admin ≥7.6.20.
+Requirements: Node.js 22 or newer, js-controller >=6.0.11, and Admin >=7.6.20.
 
 ```bash
 npm ci
 npm run test:all
 ```
 
-`test:all` umfasst die fachliche Suite, Package-Checks, `checkJs`, ESLint und js-controller-Integration. Die CI-Matrix verwendet Node.js 22/24/26 auf Linux, Windows und macOS.
+`test:all` includes the functional suite, package checks, `checkJs`, ESLint, and js-controller integration. The CI matrix uses Node.js 22/24/26 on Linux, Windows, and macOS.
 
-Die Tests umfassen unter anderem den exakten offiziellen FAQ-Frame, alle Chunk-Grenzen und Checksumbytes, HEX/Multiblock/Recovery, reale SmartSolar- und BMV-Vektoren, Serial-Fehler und hängende native Callbacks, State-/TTL-/Sampling-Verhalten sowie getrennte Instanzen.
+Tests include the exact official FAQ frame, all chunk boundaries and checksum bytes, HEX/multiblock/recovery behavior, real SmartSolar and BMV vectors, serial errors and hanging native callbacks, state/TTL/sampling behavior, and separate instances.
 
-Der vollständige Audit steht in [docs/audit-2026-11-17.md](docs/audit-2026-11-17.md). Ein quantitativer Vergleich von Sampling, TTL, CPU und Redis-State-Writes steht in [docs/performance-2026-11-18.md](docs/performance-2026-11-18.md).
+The complete audit is documented in [docs/audit-2026-11-17.md](docs/audit-2026-11-17.md). A quantitative comparison of sampling, TTL, CPU, and Redis state writes is available in [docs/performance-2026-11-18.md](docs/performance-2026-11-18.md).
 
-## Dependency-Audit
+## Dependency audit
 
-Der Produktions-Audit ist ohne Befund. Im Entwicklungs-Toolchain-Audit verbleibt eine transitive `picomatch`-ReDoS-Meldung über `tinyglobby`/TypeScript-ESLint, für die zum Prüfzeitpunkt keine korrigierte kompatible Release-Kette verfügbar ist. Sie betrifft ausschließlich Entwicklungs-Globbing mit potenziell bösartigen Patterns, nicht den Adapterbetrieb oder die VE.Direct-Verarbeitung.
+The production dependency audit has no findings. The development toolchain audit still reports a transitive `picomatch` ReDoS issue through `tinyglobby`/TypeScript-ESLint, for which no corrected compatible release chain was available at the time of testing. It affects only development globbing with potentially malicious patterns, not adapter operation or VE.Direct processing.
 
 ## Changelog
+
 ### **WORK IN PROGRESS**
 
-- (joerg) Dependabot-Auto-Merge auf sicheren `pull_request`-Trigger umgestellt; `@iobroker/testing` 6.3.2 und adapter-core 3.4.3 aktualisiert.
-- (joerg) Virtuelle serielle Endpunkte ohne Modem-Control-Ioctl (`ENOTTY`) unterstützt; andere Set-Fehler bleiben hart.
-- (joerg) Pi4-Benchmark für Sampling, TTL, CPU und Redis-State-Writes ergänzt.
+- (joerg) Changed Dependabot auto-merge to the safe `pull_request` trigger; updated `@iobroker/testing` to 6.3.2 and adapter-core to 3.4.3.
+- (joerg) Support virtual serial endpoints without a modem-control ioctl (`ENOTTY`); other set errors remain fatal.
+- (joerg) Add a Pi 4 benchmark for sampling, TTL, CPU, and Redis state writes.
+- (joerg) Provide an English main README, retain the German documentation separately, and complete the admin translations.
 
 ### 0.5.0 (2026-11-18)
 
-- (joerg) Optionaler HEX-Get-Client mit offiziellen Rev.-18-Fixtures, strenger Register-/Response-Prüfung und read-only Hardwareprobe.
-- (joerg) Optionaler Charger-on/off- und dynamischer Charge-Current-Control mit Read-after-Write, Capability-Gate und begrenzten Queues.
-- (joerg) Instanzgebundener Stromlimit-Supervisor, Session-Invalidierung ohne blindes Retry sowie umfangreiche Fake-/Serial-/Zwei-Instanz-Tests.
+- (joerg) Optional HEX read client with official revision 18 fixtures, strict register/response validation, and read-only hardware probes.
+- (joerg) Optional charger on/off and dynamic charge-current control with read-after-write, capability gating, and bounded queues.
+- (joerg) Instance-scoped current-limit supervisor, session invalidation without blind retries, and extensive fake-serial and two-instance tests.
 
 ### 0.4.0 (2026-11-18)
 
-- (joerg) Atomarer VE.Direct-3.34-Parser mit Checksum-, HEX-, Multiblock- und Recovery-Tests (#1).
-- (joerg) Feldskalierungen, Sentinels, Bitfelder, Firmwaretypen, Rollen und Metadaten korrigiert (#1).
-- (joerg) Instanzgebundener SerialPort-12-Lifecycle, Reconnect, sichere State-Queues und Unload (#2).
-- (joerg) Frame-Sampling, Expire-/Changed-Verhalten und Mehrinstanzbetrieb korrigiert (#2).
-- (joerg) Dummy-Test durch reale Protokoll-/Lifecycle-/Adaptertests ersetzt; CI und Dokumentation erweitert (#3).
-- (joerg) Node.js 22+ vorausgesetzt, CI auf Node.js 22/24/26 erweitert und Release-Tooling modernisiert.
+- (joerg) Atomic VE.Direct 3.34 parser with checksum, HEX, multiblock, and recovery tests (#1).
+- (joerg) Corrected field scaling, sentinels, bit fields, firmware types, roles, and metadata (#1).
+- (joerg) Instance-scoped SerialPort 12 lifecycle, reconnect, safe state queues, and unload (#2).
+- (joerg) Corrected frame sampling, expiration/changed behavior, and multiple-instance operation (#2).
+- (joerg) Replaced the dummy test with real protocol, lifecycle, and adapter tests; expanded CI and documentation (#3).
+- (joerg) Require Node.js 22+, expand CI to Node.js 22/24/26, and modernize release tooling.
 
 ### 0.3.3 (2024-09-10)
 
@@ -150,24 +156,22 @@ Der Produktions-Audit ist ohne Befund. Im Entwicklungs-Toolchain-Audit verbleibt
 
 ### 0.3.1 (2023-10-29)
 
-- (DutchmanNL) Message buffer implemented; im Fork durch verlustfreies Frame-Sampling ersetzt.
+- (DutchmanNL) Message buffer implemented; replaced by lossless frame sampling in this fork.
 
 ### 0.3.0 (2023-08-07)
 
-- (DutchmanNL/Andiling) Protocol 3.33 und Bugfixes.
+- (DutchmanNL/Andiling) Protocol 3.33 and bug fixes.
 
 ### 0.2.0 (2023-08-06)
 
-- (DutchmanNL/Andiling) Protocol 3.32, Produktnamen und konfigurierbare State-Ablaufzeiten.
+- (DutchmanNL/Andiling) Protocol 3.32, product names, and configurable state expiration.
 
-### 0.1.2 und älter
+### 0.1.2 and older
 
-- Ursprüngliche Releases von DutchmanNL/Andiling; siehe Upstream-Historie.
-
-## Sentry
-
-Das ioBroker-Sentry-Plugin bleibt konfiguriert. Details und Deaktivierung sind in der [Sentry-Plugin-Dokumentation](https://github.com/ioBroker/plugin-sentry#plugin-sentry) beschrieben.
+- Original releases by DutchmanNL/Andiling; see the upstream history.
 
 ## License
 
-MIT License — ursprünglich Copyright DutchmanNL und Mitwirkende; siehe [LICENSE](LICENSE).
+[MIT License](LICENSE)
+
+Copyright (c) 2023-2026 DutchmanNL <rdrozda@hotmail.com>
