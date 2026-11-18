@@ -1,4 +1,14 @@
 {
     "Leave empty or 0 to not expire states": "Deixe em branco ou 0 para não expirar os estados",
-    "Please choose your preferred settings": "Escolha suas configurações preferidas"
+    "Please choose your preferred settings": "Escolha suas configurações preferidas",
+    "VE.Direct serial port": "Porta serial VE.Direct",
+    "State expiration (seconds)": "Tempo de expiração do estado (segundos)",
+    "Frame sampling interval (seconds)": "Intervalo de amostragem de quadros (segundos)",
+    "HEX access is disabled by default. Control functions change charger behaviour and require separate validation.": "O acesso HEX está desativado por padrão. As funções de controle alteram o comportamento do carregador e exigem validação separada.",
+    "Enable read-only HEX register queries": "Ativar consultas somente de leitura de registradores HEX",
+    "Enable charger on/off control": "Ativar o controle de ligar/desligar o carregador",
+    "Enable dynamic charge current control": "Ativar o controle dinâmico da corrente de carga",
+    "Current control safety cap (A)": "Limite de segurança do controle de corrente (A)",
+    "Current limit refresh interval (seconds)": "Intervalo de atualização do limite de corrente (segundos)",
+    "Loss of external control returns the charger to stand-alone operation and its persistent maximum current; it is not a fail-safe shutdown.": "A perda do controle externo faz o carregador voltar à operação autônoma e à corrente máxima persistente configurada; isso não representa um desligamento à prova de falhas."
 }

@@ -1,4 +1,14 @@
 {
+    "Current control safety cap (A)": "Limite de sécurité pour la régulation du courant (A)",
+    "Current limit refresh interval (seconds)": "Intervalle d’actualisation de la limite de courant (secondes)",
+    "Enable charger on/off control": "Activer la commande marche/arrêt du chargeur",
+    "Enable dynamic charge current control": "Activer la régulation dynamique du courant de charge",
+    "Enable read-only HEX register queries": "Activer les requêtes en lecture seule des registres HEX",
+    "Frame sampling interval (seconds)": "Intervalle d’échantillonnage des trames (secondes)",
+    "HEX access is disabled by default. Control functions change charger behaviour and require separate validation.": "L’accès HEX est désactivé par défaut. Les fonctions de commande modifient le comportement du chargeur et nécessitent une validation séparée.",
     "Leave empty or 0 to not expire states": "Laissez vide ou 0 pour ne pas expirer les états",
-    "Please choose your preferred settings": "Veuillez choisir vos paramètres préférés"
+    "Loss of external control returns the charger to stand-alone operation and its persistent maximum current; it is not a fail-safe shutdown.": "En cas de perte de la commande externe, le chargeur revient en fonctionnement autonome et à son courant maximal enregistré de manière persistante ; il ne s’agit pas d’un arrêt de sécurité en cas de défaillance.",
+    "Please choose your preferred settings": "Veuillez choisir vos paramètres préférés",
+    "State expiration (seconds)": "Expiration de l’état (secondes)",
+    "VE.Direct serial port": "Port série VE.Direct"
 }

@@ -32,7 +32,7 @@
     "node": ">= 22"
   },
   "dependencies": {
-    "@iobroker/adapter-core": "^3.4.1",
+    "@iobroker/adapter-core": "^3.4.3",
     "serialport": "^12.0.0"
   },
   "devDependencies": {
@@ -42,15 +42,11 @@
     "@alcalzone/release-script-plugin-manual-review": "^5.2.0",
     "@iobroker/adapter-dev": "^1.5.0",
     "@iobroker/eslint-config": "^2.3.4",
-    "@iobroker/testing": "^5.3.0",
+    "@iobroker/testing": "^6.3.2",
     "@tsconfig/node22": "^22.0.2",
     "@types/node": "^22.20.5",
-    "chai": "^4.5.0",
-    "chai-as-promised": "^7.1.2",
-    "mocha": "^11.8.0",
+    "ioredis": "^6.0.0",
     "proxyquire": "^2.1.3",
-    "sinon": "^22.1.0",
-    "sinon-chai": "^3.7.0",
     "typescript": "~5.9.3"
   },
   "files": [
@@ -64,9 +60,9 @@
   ],
   "main": "main.js",
   "scripts": {
-    "test:js": "mocha",
-    "test:package": "mocha test/package --exit",
-    "test:integration": "mocha test/integration --exit",
+    "test:js": "node node_modules/@iobroker/testing/node_modules/mocha/bin/mocha.js",
+    "test:package": "node node_modules/@iobroker/testing/node_modules/mocha/bin/mocha.js test/package --exit",
+    "test:integration": "node node_modules/@iobroker/testing/node_modules/mocha/bin/mocha.js test/integration --exit",
     "test": "npm run test:js && npm run test:package",
     "test:all": "npm test && npm run check && npm run lint && npm run test:integration",
     "check": "tsc --noEmit",
