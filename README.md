@@ -6,8 +6,6 @@
 
 Read-only ioBroker-Adapter für Victron-Geräte mit serieller VE.Direct-Schnittstelle. Dieses Repository ist ein Fork von [DrozmotiX/ioBroker.vedirect](https://github.com/DrozmotiX/ioBroker.vedirect) und enthält eine grundlegende Protokoll- und Lifecycle-Härtung.
 
-> **Entwicklungsstand:** Der Branch `fix/robust-ve-direct` ist noch kein Produktivrelease. Die bestehende pi3-Installation wurde nicht verändert.
-
 ## Funktionen
 
 - Byteorientierter, atomarer Parser nach **VE.Direct Protocol 3.34** und offizieller FAQ.
