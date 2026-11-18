@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="de" data-theme="luxury">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VE.Direct-Schreibzugriff · Machbarkeitsstudie für zwei SmartSolar MPPT 100/50</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daisyui@5.5.19/daisyui.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daisyui@5.5.19/themes.css">
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.2.4/dist/index.global.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html { background: var(--color-base-200); }
+    body { margin: 0; background: var(--color-base-200); color: var(--color-base-content); }
+    :where(.grid, .flex) > * { min-width: 0; }
+    :where(p, h1, h2, h3, h4, li, dd, blockquote, figcaption, td, th, .badge) { overflow-wrap: anywhere; }
+    :where(img, svg, video, canvas, iframe) { max-width: 100%; height: auto; }
+    .auto-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), minmax(0, 1fr))); gap: 1rem; }
+    .two-col { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.25rem; }
+    @media (min-width: 900px) { .two-col { grid-template-columns: minmax(0, 1.25fr) minmax(0, .75fr); } }
+    .eyebrow { letter-spacing: .14em; text-transform: uppercase; font-size: .72rem; font-weight: 700; opacity: .68; }
+    .protocol-svg { color: var(--color-base-content); }
+    .protocol-svg text { fill: currentColor; font-family: inherit; }
+    .protocol-svg .node { fill: var(--color-base-100); stroke: var(--color-base-content); stroke-opacity: .28; }
+    .protocol-svg .control-node { fill: var(--color-warning); fill-opacity: .12; stroke: var(--color-warning); }
+    .protocol-svg .read-node { fill: var(--color-success); fill-opacity: .10; stroke: var(--color-success); }
+    .protocol-svg .edge { fill: none; stroke: currentColor; stroke-width: 2; stroke-opacity: .64; }
+    .protocol-svg .control-edge { stroke: var(--color-warning); stroke-opacity: .9; }
+    .protocol-svg .read-edge { stroke: var(--color-success); stroke-opacity: .9; }
+    .protocol-svg .muted { opacity: .64; }
+    .badge { height: auto; min-height: 1.5rem; padding-block: .25rem; white-space: normal; line-height: 1.15; text-align: center; }
+  </style>
+</head>
+<body>
+  <main class="mx-auto max-w-7xl p-4 sm:p-6 lg:p-10">
+    <section id="antwort" class="hero rounded-box bg-base-100 shadow-sm border border-base-content/10">
+      <div class="hero-content w-full flex-col items-start p-6 sm:p-9 lg:p-12">
+        <div class="flex flex-wrap gap-2 items-center">
+          <span class="badge badge-warning">Machbarkeitsstudie</span>
+          <span class="badge badge-outline">18. November 2026</span>
+          <span class="badge badge-success">Keine Schreibzugriffe durchgeführt</span>
+        </div>
+        <div class="mt-4 max-w-4xl">
+          <p class="eyebrow">Victron VE.Direct · zwei SmartSolar MPPT 100/50 · Firmware 1.74</p>
+          <h1 class="mt-2 text-3xl sm:text-5xl font-bold leading-tight">Kann der Adapter Werte setzen?</h1>
+          <p class="mt-5 text-lg sm:text-2xl leading-relaxed">
+            <strong>Ja, das offizielle VE.Direct-HEX-Protokoll erlaubt das grundsätzlich.</strong>
+            Für eure Geräte sind besonders <strong>Charger Ein/Aus</strong> und ein <strong>dynamisches Ladestromlimit</strong> dokumentiert.
+            Der installierte Adapter 0.4.0 bleibt jedoch vollständig read-only; eine Steuerung wäre eine separate, sicherheitsrelevante Erweiterung.
+          </p>
+        </div>
+        <div class="mt-7 grid grid-cols-1 sm:grid-cols-3 gap-3 w-full">
+          <div class="stat rounded-box bg-base-200"><div class="stat-title">Protokoll</div><div class="stat-value text-2xl">HEX Get / Set</div><div class="stat-desc">offiziell dokumentiert</div></div>
+          <div class="stat rounded-box bg-base-200"><div class="stat-title">Firmware</div><div class="stat-value text-2xl">1.74</div><div class="stat-desc">über den relevanten Mindestversionen</div></div>
+          <div class="stat rounded-box bg-base-200"><div class="stat-title">Aktueller Adapter</div><div class="stat-value text-2xl">Read-only</div><div class="stat-desc">keine Steuer-States, kein Serial-Write</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="empfehlung" class="alert alert-warning mt-6 shadow-sm" role="alert">
+      <div>
+        <h2 class="font-bold text-lg">Empfehlung aus der Studie</h2>
+        <p>Technisch ist eine Erweiterung machbar. Sinnvoll wäre ein gestufter Beginn mit <strong>HEX-Get</strong>, danach optional <strong>Charger Ein/Aus</strong> und erst danach ein <strong>dynamisches Stromlimit mit laufender Überwachung</strong>. Keine frei beschreibbaren Register, keine BMS-/Slave-Nachbildung und keine zyklischen Schreibzugriffe auf persistente Batterieeinstellungen.</p>
+      </div>
+    </section>
+
+    <section id="funktionen" class="mt-10">
+      <p class="eyebrow">Protokollnachweis und Gerätepassung</p>
+      <h2 class="text-2xl sm:text-3xl font-bold mt-1">Welche Funktionen sind tatsächlich dokumentiert?</h2>
+      <p class="mt-3 max-w-4xl opacity-80">Die folgende Bewertung kombiniert das offizielle BlueSolar-/SmartSolar-HEX-Protokoll Rev. 18 mit dem konkreten Produkt <code>0xA057</code>, Firmware 1.74 und dem vorhandenen Zwei-Instanz-Aufbau. „Dokumentiert“ ist keine Garantie für jedes einzelne Gerät; vor einem Set müssen Get, Fehlerantwort und Read-after-Write funktionieren.</p>
+      <div class="overflow-x-auto mt-5 rounded-box border border-base-content/10 bg-base-100 shadow-sm">
+        <table class="table table-zebra align-top">
+          <thead><tr><th>Funktion</th><th>Protokoll</th><th>Bewertung für MPPT 100/50, FW 1.74</th><th>Empfehlung</th></tr></thead>
+          <tbody>
+            <tr id="fn-onoff">
+              <td><strong>Charger Ein/Aus</strong></td>
+              <td><code>0x0200</code> Device mode; <code>0x0202</code> Remote-Control-Maske; Istzustand über <code>0x0201</code></td>
+              <td>Dokumentiert: <code>1</code> = on, <code>0</code> oder <code>4</code> = off. Seit FW 1.42 ist das Remote-ON/OFF-Bit standardmäßig gesetzt; FW 1.74 liegt darüber. „Ein“ ist eine Freigabe, nicht die Garantie, dass gerade PV-Leistung fließt.</td>
+              <td><span class="badge badge-success">Guter erster Set-Kandidat</span></td>
+            </tr>
+            <tr id="fn-current">
+              <td><strong>Dynamisches Ladestromlimit</strong></td>
+              <td><code>0x2015</code>, Skalierung 0,1 A; zusammen mit Network mode <code>0x200E</code></td>
+              <td>Dokumentiert ab FW 1.19; Remote-Control offiziell ab 1.29. Muss mehr als einmal pro Minute zusammen mit dem Modus geschrieben werden. Wirksam ist das Minimum aus dynamischem Limit und persistentem Maximalstrom <code>0xEDF0</code>.</td>
+              <td><span class="badge badge-warning">Sinnvoll, aber nur mit Supervisor</span></td>
+            </tr>
+            <tr id="fn-voltage">
+              <td><strong>Ladespannungs-Sollwert</strong></td>
+              <td><code>0x2001</code>, Skalierung 0,01 V; zusammen mit <code>0x200E</code></td>
+              <td>Technisch dokumentiert. Bei External Control beeinflusst dies direkt den Ladealgorithmus. Ein falscher Wert kann die Batterie schädigen; Kommunikations- und Bereichsprüfungen werden sicherheitskritisch.</td>
+              <td><span class="badge badge-error">Nicht für die erste Ausbaustufe</span></td>
+            </tr>
+            <tr id="fn-sensors">
+              <td><strong>Externe Spannungs-/Temperaturwerte</strong></td>
+              <td><code>0x2002</code> Voltage sense; <code>0x2003</code> Temperature sense</td>
+              <td>Dokumentiert; Werte müssen regelmäßig erneuert werden und fallen nach etwa einer Minute auf internes Verhalten zurück. Reservierte Sentinel-Werte melden nicht mehr verfügbare Sensordaten.</td>
+              <td><span class="badge badge-neutral">Nur bei konkretem Bedarf</span></td>
+            </tr>
+            <tr id="fn-persistent">
+              <td><strong>Persistente Batterieeinstellungen</strong></td>
+              <td>Beispiel <code>0xEDF0</code> Battery maximum current; weitere Batterie-/Ladeeinstellungen</td>
+              <td>Schreibbar, aber laut Victron im nichtflüchtigen Speicher. Kontinuierliches Schreiben aus einer Regelschleife kann zu vorzeitigem Ausfall führen.</td>
+              <td><span class="badge badge-error">Nicht als dynamische States</span></td>
+            </tr>
+            <tr id="fn-bms">
+              <td><strong>BMS-/Slave-/Synchronisationsmodi</strong></td>
+              <td><code>0x200E</code> und mehrere abhängige Remote-Register</td>
+              <td>Deutlich komplexer. Im BMS-Modus kann bereits die Aktivierung die persistente Einstellung „BMS present“ setzen; bei ausbleibenden Daten stoppt das Laden mit Fehler #67. Slave-Betrieb verlangt weitere konsistente Zustandsdaten.</td>
+              <td><span class="badge badge-error">Nicht selbst nachbauen</span></td>
+            </tr>
+            <tr id="fn-load">
+              <td><strong>Load-Ausgang / Relais</strong></td>
+              <td>Modellabhängige Register</td>
+              <td>Die offizielle Produkttabelle weist für <code>0xA057</code> keinen physischen Load-Ausgang aus; ein frei nutzbares Relais ist nicht belegt. Ein virtueller Load-Ausgang über den TX-Pin ist dokumentiert, aber dessen Kombination mit ungestörter TEXT-/HEX-Kommunikation ist nicht ausreichend zugesichert. <code>LOAD=ON</code> beweist keine schaltbare physische Ausgabe.</td>
+              <td><span class="badge badge-neutral">Auf dieser Hardware nicht anbieten</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="hex-details" class="mt-10 two-col">
+      <article class="card card-border bg-base-100 shadow-sm"><div class="card-body">
+        <p class="eyebrow">HEX Rev. 18 · §1, PDF S. 3</p>
+        <h2 class="card-title">Get und Set sind echte Protokolltransaktionen</h2>
+        <p class="opacity-85">Frames beginnen mit <code>:</code>, bestehen aus ASCII-Hex-Zeichen in Großbuchstaben und enden mit LF. Register-IDs und Werte werden little-endian kodiert. Die Byte-Checksumme ergänzt Command und Payload modulo 256 auf <code>0x55</code>.</p>
+        <div class="grid grid-cols-2 gap-3 mt-4">
+          <div class="rounded-box bg-base-200 p-4"><strong>Command 7 · Get</strong><p class="text-sm opacity-70 mt-1">Register-ID und Flags; Antwort enthält Register, Flags und Wert oder Fehler.</p></div>
+          <div class="rounded-box bg-base-200 p-4"><strong>Command 8 · Set</strong><p class="text-sm opacity-70 mt-1">Register-ID, Flags und typabhängiger Wert; die Antwort muss vollständig geprüft werden.</p></div>
+        </div>
+        <p class="mt-4 text-sm opacity-70">Die Studie konstruiert bewusst keinen neuen Schreibframe. Das offizielle Set-Beispiel betrifft das persistente <code>0xEDF0</code> und ist kein Muster für eine dynamische Regelschleife.</p>
+      </div></article>
+      <div class="overflow-x-auto rounded-box border border-base-content/10 bg-base-100 shadow-sm">
+        <table class="table">
+          <thead><tr><th>Response-Flag</th><th>Bedeutung</th><th>Folge</th></tr></thead>
+          <tbody>
+            <tr><td><code>0x01</code></td><td>Unknown ID</td><td>Register am Gerät nicht vorhanden</td></tr>
+            <tr><td><code>0x02</code></td><td>Not supported</td><td>Etwa read-only oder nicht unterstützt</td></tr>
+            <tr><td><code>0x04</code></td><td>Parameter Error</td><td>Wert oder Kontext ungültig</td></tr>
+          </tbody>
+        </table>
+        <div class="alert alert-info m-4"><div><strong>Vor dem ersten Set:</strong><p class="text-sm">Capability <code>0x0140</code>, insbesondere Bit 15 „External control support“, sowie relevante Istregister read-only auslesen. Eine beliebige HEX-Antwort ist noch kein Erfolgsnachweis.</p></div></div>
+      </div>
+    </section>
+
+    <section id="architektur" class="mt-10 grid lg:grid-cols-2 gap-5 items-start">
+      <figure class="card card-border bg-base-100 shadow-sm m-0">
+        <div class="card-body">
+          <p class="eyebrow">Zielbild, nicht vorhandener Ist-Zustand</p>
+          <h2 class="card-title">Jeder MPPT braucht einen eigenen kontrollierten Befehlsweg</h2>
+          <svg class="protocol-svg mt-3 w-full" viewBox="0 0 720 430" role="img" aria-labelledby="svg-title svg-desc">
+            <title id="svg-title">Getrennte Lese- und mögliche Schreibwege für zwei MPPTs</title>
+            <desc id="svg-desc">Jede ioBroker-Instanz besitzt eine eigene Validierung, Warteschlange und serielle Verbindung. TEXT-Daten fließen vom MPPT zum Adapter. HEX-Befehle würden erst nach Validierung und mit Antwortprüfung zum selben MPPT fließen.</desc>
+            <defs>
+              <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/></marker>
+            </defs>
+            <g id="instance-a">
+              <title>Instanz vedirect.0 und MPPT A</title>
+              <rect class="node" x="20" y="35" width="160" height="80" rx="14"/>
+              <text x="100" y="67" text-anchor="middle" font-weight="700">vedirect.0</text><text class="muted" x="100" y="91" text-anchor="middle">States / Sollwert</text>
+              <rect class="control-node" x="270" y="35" width="180" height="80" rx="14"/>
+              <text x="360" y="65" text-anchor="middle" font-weight="700">Validierung A</text><text class="muted" x="360" y="89" text-anchor="middle">Opt-in · Queue · Timeout</text>
+              <rect class="node" x="540" y="35" width="160" height="80" rx="14"/>
+              <text x="620" y="65" text-anchor="middle" font-weight="700">MPPT A</text><text class="muted" x="620" y="89" text-anchor="middle">VE-1 · HQ…ZP</text>
+              <path id="a-control" class="edge control-edge" marker-end="url(#arrow)" d="M180 55 H262 M458 55 H532"><title>Möglicher HEX-Set-Weg A</title></path>
+              <path id="a-read" class="edge read-edge" marker-end="url(#arrow)" d="M532 95 H458 M262 95 H180"><title>HEX-Antwort und TEXT-Messwerte A</title></path>
+              <text x="495" y="45" text-anchor="middle" font-size="12">HEX Set</text><text x="495" y="112" text-anchor="middle" font-size="12">Response / TEXT</text>
+            </g>
+            <g id="instance-b">
+              <title>Instanz vedirect.1 und MPPT B</title>
+              <rect class="node" x="20" y="245" width="160" height="80" rx="14"/>
+              <text x="100" y="277" text-anchor="middle" font-weight="700">vedirect.1</text><text class="muted" x="100" y="301" text-anchor="middle">States / Sollwert</text>
+              <rect class="control-node" x="270" y="245" width="180" height="80" rx="14"/>
+              <text x="360" y="275" text-anchor="middle" font-weight="700">Validierung B</text><text class="muted" x="360" y="299" text-anchor="middle">Opt-in · Queue · Timeout</text>
+              <rect class="node" x="540" y="245" width="160" height="80" rx="14"/>
+              <text x="620" y="275" text-anchor="middle" font-weight="700">MPPT B</text><text class="muted" x="620" y="299" text-anchor="middle">VE-2 · HQ…2K</text>
+              <path id="b-control" class="edge control-edge" marker-end="url(#arrow)" d="M180 265 H262 M458 265 H532"><title>Möglicher HEX-Set-Weg B</title></path>
+              <path id="b-read" class="edge read-edge" marker-end="url(#arrow)" d="M532 305 H458 M262 305 H180"><title>HEX-Antwort und TEXT-Messwerte B</title></path>
+              <text x="495" y="255" text-anchor="middle" font-size="12">HEX Set</text><text x="495" y="322" text-anchor="middle" font-size="12">Response / TEXT</text>
+            </g>
+            <g id="separation">
+              <title>Kein gemeinsamer Port und keine atomare Gruppensteuerung</title>
+              <rect class="read-node" x="150" y="365" width="420" height="45" rx="12"/>
+              <text x="360" y="393" text-anchor="middle" font-size="14">Kein gemeinsamer Port · keine Gruppen-Transaktion</text>
+            </g>
+          </svg>
+          <figcaption class="text-sm opacity-70">Die aktuelle 0.4.0 nutzt nur die TEXT-Richtung. Die HEX-Steuerung ist ein mögliches separates Zielbild.</figcaption>
+        </div>
+      </figure>
+      <div class="space-y-5">
+        <article id="ist-adapter" class="card card-border bg-base-100 shadow-sm"><div class="card-body">
+          <h2 class="card-title">Warum ein beschreibbarer State allein nicht reicht</h2>
+          <ul class="list-disc ml-5 space-y-2 opacity-85">
+            <li>Der aktuelle Adapter besitzt keine Steuer-State-Behandlung und keine Serial-Write-Schnittstelle.</li>
+            <li>Der TEXT-Parser erkennt HEX-Nachrichten derzeit nur, um sie sicher zu überspringen und anschließend wieder zu synchronisieren.</li>
+            <li>Für Set-Befehle werden HEX-Kodierung, Antwort- und Fehlerdecodierung, Timeouts sowie eine instanzgebundene Befehlsschlange benötigt.</li>
+            <li>Erfolg darf erst nach gültiger Antwort und sinnvollem Read-after-Write bestätigt werden.</li>
+            <li>Watchdog, Reconnect, Sampling und Unload müssen HEX-Transaktionen und die verschränkten TEXT-/HEX-Nachrichten korrekt behandeln.</li>
+          </ul>
+        </div></article>
+        <article id="hardware" class="card card-border bg-base-100 shadow-sm"><div class="card-body">
+          <h2 class="card-title">Die vorhandene Verkabelung erfüllt die Grundlage</h2>
+          <p class="opacity-85">Beide Geräte verwenden eigene originale Victron-VE.Direct-USB-Kabel mit eindeutigen USB-IDs. Die aktuellen Aliase bleiben getrennt:</p>
+          <ul class="mt-3 space-y-2 font-mono text-sm"><li>VE-1 → ttyUSB0 → VE5O7BP0</li><li>VE-2 → ttyUSB1 → VE6NMRYR</li></ul>
+          <p class="mt-3 text-sm opacity-70">Kein zweites Programm und keine zweite Instanz darf gleichzeitig auf einem dieser Ports arbeiten. Der SerialPort-Lock ist unter POSIX ein kooperativer Schutz und ersetzt diese Betriebsregel nicht.</p>
+        </div></article>
+      </div>
+    </section>
+
+    <section id="umfang" class="mt-10">
+      <p class="eyebrow">Codebasis 0.4.0 · technischer Umfang</p>
+      <h2 class="text-2xl sm:text-3xl font-bold mt-1">Vorhandene Basis wiederverwenden, Steuerung sauber ergänzen</h2>
+      <div class="two-col mt-5">
+        <div class="overflow-x-auto rounded-box border border-base-content/10 bg-base-100 shadow-sm">
+          <table class="table table-sm align-top">
+            <thead><tr><th>Datei / Modul</th><th>Erforderliche Erweiterung</th></tr></thead>
+            <tbody>
+              <tr><td><code>lib/veDirect/hexProtocol.js</code><br><span class="badge badge-outline mt-1">neu</span></td><td>Strikte HEX-Request-/Response-Kodierung, Checksumme, Flags, Fehler und Längenprüfung.</td></tr>
+              <tr><td><code>lib/veDirect/veDirectParser.js</code></td><td>HEX-Zeilen über Serial-Chunks sammeln und geprüft als Ereignis ausgeben; bewährte TEXT-Priorität unverändert lassen.</td></tr>
+              <tr><td><code>lib/veDirectCom.js</code></td><td>Internes <code>writeAndDrain()</code> mit Sessionprüfung, Write-/Drain-Timeouts und Schutz vor Writes auf alte Ports.</td></tr>
+              <tr><td><code>lib/veDirectHexClient.js</code><br><span class="badge badge-outline mt-1">neu</span></td><td>Eine aktive Transaktion pro Instanz, begrenzte Queue, Response-Matching, Abbruch und kein blindes Retry nach ambivalentem Timeout.</td></tr>
+              <tr><td><code>lib/veDirect/hexFields.js</code><br><span class="badge badge-outline mt-1">neu</span></td><td>Enge Whitelist mit State-ID, Wertebereich, Skalierung, Enum, Get/Set- und Readback-Regeln; keine frei wählbaren Register.</td></tr>
+              <tr><td><code>main.js</code></td><td>Separate <code>control.*</code>-States, Eingangsvalidierung, bestätigte Istwerte und erweitertes Unload. Für FW 1.74 kann die bewährte TEXT-Liveness bestehen bleiben, da keine HEX-bedingte TEXT-Pause zu erwarten ist.</td></tr>
+              <tr><td><code>io-package.json</code>, <code>admin/</code></td><td>Standardmäßig deaktivierte Opt-ins, funktionsbezogene Freigaben, Übersetzungen und verständliche Warnhinweise.</td></tr>
+              <tr><td>Tests</td><td>Fake-Ports weiterhin plattformübergreifend; zusätzlich zwei echte PTY-Paare unter Linux für gleichzeitige Befehle, Porttrennung, Close, Reconnect und TEXT-/HEX-Übergänge.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <aside class="space-y-4">
+          <div class="card card-border bg-base-100"><div class="card-body"><h3 class="card-title">Bereits stark</h3><p class="opacity-80">Instanzgebundene Ports und Parser, SerialPort-Lifecycle, Timeouts, State-Queues, Changed-Writes und begrenztes Unload sind vorhanden und wiederverwendbar.</p></div></div>
+          <div class="card card-border bg-base-100"><div class="card-body"><h3 class="card-title">Entscheidender neuer Baustein</h3><p class="opacity-80">Ein transaktionsorientierter HEX-Client pro Instanz. Eine HEX-Zeile darf niemals allein aufgrund ihres Eingangs eine wartende Operation bestätigen.</p></div></div>
+          <div class="alert alert-warning"><div><h3 class="font-bold">Grobe Größenordnung</h3><p>Etwa <strong>9–15 Engineering-Tage</strong> für sicheren Set-Support inklusive automatisierter Tests; reale Zwei-Geräte- und Langzeitvalidierung zusätzlich. Get-only ist deutlich kleiner. Das ist eine Aufwandsschätzung, kein Terminversprechen.</p></div></div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="betrieb" class="mt-10">
+      <p class="eyebrow">Betriebsverhalten</p>
+      <h2 class="text-2xl sm:text-3xl font-bold mt-1">Die wichtigsten Folgen für eine Steuerung</h2>
+      <div class="auto-grid mt-5">
+        <article class="card card-border bg-base-100"><div class="card-body"><h3 class="card-title">Nur Stromlimit</h3><p class="opacity-80">Im External-Control-Modus <code>0x05</code> kann seit FW 1.42 ausschließlich ein Strom-Sollwert gesendet werden. Dann arbeitet die interne Bulk-/Absorption-/Float-Logik weiter. Das passt grundsätzlich gut zu FW 1.74.</p></div></article>
+        <article class="card card-border bg-base-100"><div class="card-body"><h3 class="card-title">Regelmäßige Erneuerung</h3><p class="opacity-80"><code>0x2015</code> und <code>0x200E</code> müssen mehr als einmal pro Minute geschrieben werden. Eine Implementierung braucht daher einen zuverlässigen Supervisor statt eines einmaligen State-Writes.</p></div></article>
+        <article class="card card-border bg-base-100"><div class="card-body"><h3 class="card-title">Kommunikationsverlust</h3><p class="opacity-80">External Control fällt nach etwa einer Minute ohne Daten auf Stand-alone zurück. Das bedeutet <strong>nicht</strong> Strom 0: Es gilt wieder das persistente Maximum <code>0xEDF0</code>. Im BMS-Modus stoppt dagegen das Laden mit Fehler #67.</p></div></article>
+        <article class="card card-border bg-base-100"><div class="card-body"><h3 class="card-title">TEXT und HEX koordinieren</h3><p class="opacity-80">Für diese MPPTs gilt ab FW 1.53: TEXT wird nicht mehr wegen HEX pausiert und wird etwa alle zwei Sekunden gesendet. Eine HEX-Antwort wartet auf das Ende eines laufenden TEXT-Frames. Parser und Transaktions-Timeout müssen dieses Verschränken korrekt abbilden; eine künstliche Pause ist bei FW 1.74 nicht erforderlich.</p></div></article>
+        <article class="card card-border bg-base-100"><div class="card-body"><h3 class="card-title">Zwei Limits, kein Gruppenlimit</h3><p class="opacity-80">Jedes Gerät besitzt ein eigenes wirksames Limit. Es gibt keine atomare „beide zusammen auf X Ampere“-Operation. Eine gemeinsame Batteriestromregelung müsste Messwerte, andere Verbraucher und beide MPPTs übergeordnet berücksichtigen.</p></div></article>
+        <article class="card card-border bg-base-100"><div class="card-body"><h3 class="card-title">Keine blinden Schleifen</h3><p class="opacity-80">Dynamische Remote-Register und persistente Batterieeinstellungen sind strikt zu unterscheiden. Nur erstere kommen für eine wiederholte Regelung infrage; Letztere dürfen nicht zyklisch beschrieben werden.</p></div></article>
+      </div>
+      <div class="alert alert-error mt-5" role="alert"><div><h3 class="font-bold">External Control ist keine Fail-safe-Abschaltung</h3><p>Wenn die Steuerdaten ausbleiben, kann der Ladestrom wieder bis zum persistenten Maximum ansteigen. Eine digitale Steuerung ersetzt weder ein Batterie-BMS noch physische Schutz- und Trennmechanismen. Für ein explizites Aus ist <code>0x0200</code> zu verwenden; ein angenommenes Verhalten von <code>0x2015 = 0</code> ist nicht als verlässliches Charger-Off dokumentiert.</p></div></div>
+    </section>
+
+    <section id="sicherheit" class="mt-10 two-col">
+      <article class="card card-border bg-base-100 shadow-sm"><div class="card-body">
+        <p class="eyebrow">Mindestanforderungen</p>
+        <h2 class="card-title">Sichere Adapterarchitektur</h2>
+        <ul class="list-disc ml-5 space-y-2 opacity-85">
+          <li>Read-only bleibt die Standardeinstellung; Steuerung nur pro Instanz und Funktion explizit aktivieren.</li>
+          <li>Nur eine kleine Whitelist wie Charger on/off und Stromlimit; niemals beliebige HEX-Register aus ioBroker freigeben.</li>
+          <li>Strikte Typ-, Bereichs- und Plausibilitätsprüfung. Ungültige Werte ablehnen statt still zu begrenzen.</li>
+          <li>Pro Instanz nur eine ausstehende HEX-Operation, begrenzte Queue und klare Timeouts.</li>
+          <li>Ack erst nach gültiger Antwort beziehungsweise Read-after-Write; Fehler als sichtbaren Kontrollstatus ausgeben.</li>
+          <li>Capability-Get vor dem ersten Set, einschließlich External-Control-Bit in <code>0x0140</code>, auch wenn PID und Firmware grundsätzlich passen.</li>
+          <li>Reconnect, Unload und Verbindungsabbruch müssen laufende Befehle und Refresh-Timer sicher beenden.</li>
+          <li>Kein Produktiv-Set ohne separate Freigabe und vorherige Simulator-, PTY- und reale Get-Tests.</li>
+        </ul>
+      </div></article>
+      <aside class="space-y-4">
+        <div class="alert alert-error"><div><h3 class="font-bold">Nicht als Nebenfunktion freigeben</h3><p>Kein BMS-Modus, keine Slave-Nachbildung, keine Restore-/Clear-History-/Restart-Kommandos und keine allgemeinen Batterie-Config-Schreibzugriffe.</p></div></div>
+        <div class="alert alert-warning"><div><h3 class="font-bold">Andere Steuerquellen zuerst klären</h3><p>Vorhandene GX-/DVCC-, BMS- oder VE.Smart-Steuerung darf nicht mit einem eigenen VE.Direct-Master kollidieren; eine sichere Arbitrationslogik mehrerer gleichberechtigter Master ist nicht dokumentiert. Während Tests keine parallelen Änderungen über VictronConnect. Sollwert und tatsächlicher Ladezustand bleiben getrennt.</p></div></div>
+        <div class="alert alert-info"><div><h3 class="font-bold">Rollback bleibt einfach</h3><p>Die produktive 0.4.0 bleibt unverändert. Eine mögliche Steuerung gehört in einen separaten Branch und ein eigenes Release, nicht in einen stillen Nachpatch.</p></div></div>
+      </aside>
+    </section>
+
+    <section id="phasen" class="mt-10 card card-border bg-base-100 shadow-sm"><div class="card-body">
+      <p class="eyebrow">Empfohlene Einführung</p>
+      <h2 class="card-title">Vom Protokollnachweis bis zur optionalen Steuerung</h2>
+      <ul class="steps steps-vertical lg:steps-horizontal w-full mt-5">
+        <li class="step step-primary"><div class="text-left lg:text-center px-2"><strong>1 · HEX-Get</strong><br><span class="text-sm opacity-70">Codec, Antworten, Fehler, Queue; keine Geräteänderung</span></div></li>
+        <li class="step step-primary"><div class="text-left lg:text-center px-2"><strong>2 · Simulation</strong><br><span class="text-sm opacity-70">Chunk-Splits, TEXT/HEX, Timeout, Reconnect, zwei Instanzen</span></div></li>
+        <li class="step"><div class="text-left lg:text-center px-2"><strong>3 · Reale Gets</strong><br><span class="text-sm opacity-70">Capabilities und Istwerte auf beiden Geräten, weiterhin read-only</span></div></li>
+        <li class="step"><div class="text-left lg:text-center px-2"><strong>4 · On/Off</strong><br><span class="text-sm opacity-70">Expliziter Test, Readback und sauberes Unload</span></div></li>
+        <li class="step"><div class="text-left lg:text-center px-2"><strong>5 · Stromlimit</strong><br><span class="text-sm opacity-70">Supervisor, Refresh, Ausfallverhalten und Bereichsgrenzen</span></div></li>
+      </ul>
+      <p class="mt-5 opacity-80">Jede Stufe ist ein eigener Prüfpunkt. Ein grüner Simulator ersetzt insbesondere bei Spannung, BMS und persistenten Einstellungen keine reale, separat autorisierte Validierung.</p>
+    </div></section>
+
+    <section id="alternativen" class="mt-10">
+      <p class="eyebrow">Nicht jede Aufgabe braucht eigene HEX-Schreibzugriffe</p>
+      <h2 class="text-2xl sm:text-3xl font-bold mt-1">Native Alternativen für zwei SmartSolar</h2>
+      <div class="grid md:grid-cols-2 gap-5 mt-5">
+        <article class="card card-border bg-base-100"><div class="card-body"><h3 class="card-title">VE.Smart Networking</h3><p class="opacity-80">Falls beide MPPTs dieselbe Batterie laden, können SmartSolar über Victrons Bluetooth-Netzwerk synchronisiert laden und kompatible Spannungs-, Temperatur- und Stromsensoren nutzen. FW 1.74 liegt über der für synchronisiertes Laden genannten FW 1.47.</p><p class="mt-2 text-sm opacity-70">Das ist keine netzwerkweite maximale Stromvorgabe. Alle Geräte im Netzwerk müssen zur selben Batterie gehören und gleiche Batterieeinstellungen verwenden.</p></div></article>
+        <article class="card card-border bg-base-100"><div class="card-body"><h3 class="card-title">GX / DVCC</h3><p class="opacity-80">Victron nennt GX/DVCC ausdrücklich als Option, wenn ein netzwerkweites Ladestromlimit benötigt wird. Das ist die herstellerseitige Systemsteuerung; eine ioBroker-Regelung wäre eine eigene Alternative mit eigenem Sicherheits- und Ausfallkonzept.</p></div></article>
+      </div>
+    </section>
+
+    <section id="fazit" class="mt-10 hero rounded-box bg-base-100 border border-base-content/10"><div class="hero-content flex-col items-start p-6 sm:p-8">
+      <p class="eyebrow">Ergebnis</p>
+      <h2 class="text-2xl sm:text-3xl font-bold">Machbar – aber gezielt statt generell</h2>
+      <p class="mt-2 max-w-5xl text-lg opacity-85">Für eure zwei MPPT 100/50 mit FW 1.74 ist ein optionaler HEX-Steuerkanal technisch realistisch. <strong>Charger Ein/Aus ist der am klarsten abgegrenzte Set-Kandidat; das dynamische Ladestromlimit ist der fachlich interessanteste, aber laufzeitkritische Kandidat.</strong> Spannungsvorgaben, BMS-/Slave-Modi und persistente Batterieeinstellungen sollten nicht Teil einer ersten Erweiterung sein. Load-/Relaissteuerung ist auf dieser Hardware nicht anzubieten.</p>
+      <p class="mt-2 max-w-5xl opacity-70">Diese Studie hat weder Code noch Produktivkonfiguration verändert und keine HEX-Set-Befehle gesendet.</p>
+    </div></section>
+
+    <footer id="quellen" class="mt-10 pb-6">
+      <h2 class="text-xl font-bold">Offizielle Quellen und Nachweisgrenzen</h2>
+      <div class="grid md:grid-cols-2 gap-3 mt-4 text-sm">
+        <a class="link link-primary" href="https://www.victronenergy.com/upload/documents/BlueSolar-HEX-protocol.pdf">Victron: BlueSolar-/SmartSolar-HEX-Protokoll, Rev. 18 vom 15.11.2021</a>
+        <a class="link link-primary" href="https://www.victronenergy.com/upload/documents/VE.Direct-Protocol-3.34.pdf">Victron: VE.Direct Protocol 3.34</a>
+        <a class="link link-primary" href="https://www.victronenergy.com/live/vedirect_protocol:faq#q7how_about_frequency_of_transmitting_hex_messages">Victron: VE.Direct FAQ, insbesondere Q7 zu HEX/TEXT</a>
+        <a class="link link-primary" href="https://www.victronenergy.com/upload/documents/Manual%5FSmartSolar%5FMPPT%5F100-30%5F%5F100-50/29694-MPPT%5Fsolar%5Fcharger%5Fmanual-pdf-en.pdf">Victron: SmartSolar MPPT 100/30 &amp; 100/50 Handbuch, Rev. 13</a>
+        <a class="link link-primary" href="https://www.victronenergy.com/upload/documents/Datasheet-BlueSolar-and-SmartSolar-charge-controller-overview-EN.pdf">Victron: Geräteübersicht mit Load-/Relaisausstattung</a>
+        <a class="link link-primary" href="https://www.victronenergy.com/upload/documents/VE.Smart_Networking/20723-VE_Smart_Networking-pdf-en.pdf">Victron: VE.Smart Networking, Rev. 05</a>
+        <a class="link link-primary" href="https://www.victronenergy.com/live/battery_compatibility:start">Victron: Battery Compatibility und Batteriesicherheit</a>
+        <a class="link link-primary" href="https://github.com/joergspoerl/ioBroker.vedirect/blob/v0.4.0/docs/two-mppt.md">Aktueller Adapter 0.4.0: Zwei-MPPT- und Read-only-Grenzen</a>
+        <a class="link link-primary" href="https://github.com/joergspoerl/ioBroker.vedirect/blob/main/docs/production-2026-11-18.md">Produktivnachweis 0.4.0</a>
+      </div>
+      <p class="mt-5 text-xs opacity-60">Registerunterstützung ist vor einem realen Set zusätzlich per Get und Fehlerantwort am konkreten Gerät zu bestätigen. Keine Aussage in dieser Studie ist eine Schreibfreigabe.</p>
+    </footer>
+  </main>
+</body>
+</html>
