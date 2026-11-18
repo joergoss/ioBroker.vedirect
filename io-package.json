@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "vedirect",
-    "version": "0.4.0",
+    "version": "0.5.0",
     "news": {
+      "0.5.0": {
+        "en": "Optionaler HEX-Get-Client mit offiziellen Rev.-18-Fixtures, strenger Register-/Response-Prüfung und read-only Hardwareprobe.\nOptionaler Charger-on/off- und dynamischer Charge-Current-Control mit Read-after-Write, Capability-Gate und begrenzten Queues.\nInstanzgebundener Stromlimit-Supervisor, Session-Invalidierung ohne blindes Retry sowie umfangreiche Fake-/Serial-/Zwei-Instanz-Tests.",
+        "de": "Optionaler Hex-Get-Client mit offiziellen Rev.-18-Fixtures, strengerem Register-/Response-Test und Read-Only-Hardwaretest.\nOptionales Ein-/Ausschalten und dynamischer Ladestromregler mit Read-After-Write, Capability-Gate und begrenzten Queues.\nInstanzgebundener Stromlimit-Supervisor, Session-Invalidierung ohne blindes Retry sowie umfangreiche Fake/Serial-/Two Instance Tests.",
+        "ru": "Дополнительный клиент HEX-GET с официальными настройками версии 18, улучшающий проверку регистров/ответов и аппаратный зонд только для чтения.\nОпциональное включение/выключение зарядного устройства и динамическое управление током заряда с функцией считывания после записи, блокировкой возможностей и ограниченными очередями.\nИнстансы Stromlimit Supervisor, недействительность сеанса и слепая повторная попытка, а также множество поддельных, серийных/двух экземпляров тестов.",
+        "pt": "Cliente Hex-GET opcional com fixações Rev.-18 oficiais, teste de registro/resposta forte e sonda de hardware só de leitura.\nCarregador ligado/desligado opcional e controle dinâmico de carga com leitura após gravação, Capability-Gate e filas limitadas.\nInstanzgebundener Stromlimit-Supervisor, Session-Invalidierung ohne blindes Retry sowie Fake-Serial-/Twei-Instanz-Tests.",
+        "nl": "Optionele Hex-Get-client met officiële Rev.-18-armaturen, strenger Register-/Response-Prüfung en read-only hardwareprobe.\nOptionele Charger-On/Off- en dynamische Charge-Current-Control met Read-After-Write, Capability-Gate en begrenzten Queues.\nInstanzgebundener Stromlimit-Supervisor, Session-Invalidierung ohne blindes Retry sowie umfangreiche Fake-/Serial-/Zwei-Instanz-Tests.",
+        "fr": "Client Hex-Get optionnel mit offiziellen Rev.-18-Fixtures, Strenger Register-/Response-Prüfung und Read-Only Hardwareprobe.\nCharger-on/off et contrôle dynamique du courant de charge en option avec lecture après écriture, Capability-Gate et files d'attente limitées.\nInstanzgebundener Stromlimit-Supervisor, Session-Invalidierung ohne blindes Retry sowie umfangreiche Fake-/Serial-/Zwei-Instanz-Tests.",
+        "it": "Client Hex-GET opzionale con dispositivi Rev.-18 ufficiali, test di registro/risposta e sonda hardware di sola lettura.\nCharger-On/Off e Charge-Current Control dinamico opzionale con Read-After-Write, Capability-Gate e code illimitate.\nInstanzgebundener Stromlimit-Supervisor, Session Invalidation no blindes Retry così include test falsi/seriali/a due istanze.",
+        "es": "Cliente Hex-Get opcional con accesorios oficiales Rev.-18, prueba de registro/respuesta más fuerte y Hardwareprobe de solo lectura.\nCargador opcional encendido/apagado y control dinámico de carga y corriente con lectura después de escritura, Capability-Gate y colas limitadas.\nInstanzgebundener Stromlimit-Supervisor, Session-Invalidierung ohne blades Retry sowie umfangreiche Fake/Serial-/Zwei-Instanz-Tests.",
+        "pl": "Opcjonalny klient HEX-GET z oficjalnymi urządzeniami Rev.-18, silnymi próbami rejestru/odpowiedzi i sondą sprzętową tylko do odczytu.\nOpcjonalne włączanie/wyłączanie ładowarki i dynamiczna kontrola prądu ładowania z odczytem po zapisu, bramką zdolności i ograniczonymi kolejkami.\nInstancjonalny nadzorca limitu zasilania, inwalidacja sesji bez ślepej próby ponownego spróbowania, tak jak testy fałszywe/serialne/dwu instancji.",
+        "uk": "Необов'язковий клієнт HEX-get з офіційними пристроями Rev.-18, перевіркою реєстрів/відповідей та апаратним зондом лише для читання.\nНеобов'язковий зарядний пристрій включення/вимкнення та динамічний контроль струму заряду з читанням після запису, зйомкою можливостей та обмеженими чергами.\nІндивідуальний контролер обмеження потужності, інвалідація сеансу без сліпок Повторна спроба, як випадкові тести підроблення/серійний/двох інстанцій.",
+        "zh-cn": "可选的 Hex-Get-Client 带有官方修订版 18 固定装置、增强注册/响应测试和只读硬件探测器。\n可选的充电器开/关和动态充电电流控制，具有写后读、功能门和限制队列。\nInstanzgebundener Stromlimit-Supervisor，不设盲目会话无效重试，因此会话无效/串行/Zwei-Instanz测试。"
+      },
       "0.4.0": {
         "en": "Atomarer VE.Direct-3.34-Parser mit Checksum-, HEX-, Multiblock- und Recovery-Tests (#1).\nFeldskalierungen, Sentinels, Bitfelder, Firmwaretypen, Rollen und Metadaten korrigiert (#1).\nInstanzgebundener SerialPort-12-Lifecycle, Reconnect, sichere State-Queues und Unload (#2).\nFrame-Sampling, Expire-/Changed-Verhalten und Mehrinstanzbetrieb korrigiert (#2).\nDummy-Test durch reale Protokoll-/Lifecycle-/Adaptertests ersetzt; CI und Dokumentation erweitert (#3).\nNode.js 22+ vorausgesetzt, CI auf Node.js 22/24/26 erweitert und Release-Tooling modernisiert.",
         "de": "Atomars VE.Direct-3.34-Parser with Checksum-, HEX-, Multiblock and Recovery-Tests (#1).\nFeldskalierungen, Sentinels, Bitfelder, Firmwaretypen, Rollen und Metadaten korrigiert (#1).\nInstanzed SerialPort-12-Lifecycle, Reconnect, Secure State-Queues und Unload (#2).\nFrame-Sampling, Expire-/Changed-Verhalten und Mehrinstanzbetrieb korrigiert (#2).\nDummy-Test durch echte Protokoll-/Lifecycle-/Adaptertests ersetzt; CI and Documentation expanded (#3).\nNode.js 22+, CI on Node.js 22/24/26 erweitert und das Release-Tooling modernisiert.",
@@ -80,19 +93,6 @@
         "pl": "poprawiony błąd w trybie urządzenia",
         "zh-cn": "设备模式下的错误已更正",
         "uk": "виправлено помилку в режимі пристрою"
-      },
-      "0.0.8": {
-        "en": "Propper connection state handling and reconnect when lost",
-        "de": "Ordnungsgemäße Behandlung des Verbindungsstatus und Wiederverbindung bei Verlust",
-        "ru": "Обработка состояния соединения Propper и переподключение в случае потери",
-        "pt": "Manuseie o estado da conexão e reconecte-se quando for perdido",
-        "nl": "Correcte afhandeling van de verbindingsstatus en opnieuw verbinden bij verlies",
-        "fr": "Gestion correcte de l'état des connexions et reconnexion en cas de perte",
-        "it": "Gestione dello stato di connessione del propper e ricollegamento in caso di perdita",
-        "es": "Manejo apropiado del estado de conexión y reconexión cuando se pierde",
-        "pl": "Obsługa stanu połączenia propper i ponowne połączenie w przypadku utraty",
-        "zh-cn": "支持器连接状态处理，丢失时重新连接",
-        "uk": "Правильна обробка стану з'єднання та повторне підключення при втраті"
       }
     },
     "titleLang": {
