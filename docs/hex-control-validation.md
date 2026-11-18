@@ -53,9 +53,24 @@ Reale Set-Befehle wurden noch nicht gesendet. Die folgenden Nachweise wurden am 
 
 | Instanz | Get-only | Capability / Register | Set-Tests |
 |---|---|---|---|
-| `vedirect.0` / MPPT `HQ2128GXFZP` | Alle 8 Register fehlerfrei | Capabilities `0x0809EF76`, External-Control-Bit 15 aktiv; Device Mode ein; Remote-On/Off `2`; Stand-alone; persistent 50 A | ausstehend, Parser-Gate |
-| `vedirect.1` / MPPT `HQ2147CUA2K` | Alle 8 Register fehlerfrei | Identische Fähigkeiten und Modi; persistent 50 A | ausstehend, Parser-Gate |
+| `vedirect.0` / MPPT `HQ2128GXFZP` | Alle 8 Register fehlerfrei | Capabilities `0x0809EF76`, External-Control-Bit 15 aktiv; Device Mode ein; Remote-On/Off `2`; Stand-alone; persistent 50 A | **Erfolgreich:** Charger Aus/Ein; External 50 A → 10 A → 50 A → Stand-alone |
+| `vedirect.1` / MPPT `HQ2147CUA2K` | Alle 8 Register fehlerfrei | Identische Fähigkeiten und Modi; persistent 50 A | Keine Sets ausgeführt |
 
 Beide Geräte melden im ungesteuerten Zustand `0xFFFF` für `chargeCurrentLimit` und `chargeVoltageSetpoint`. Die erste Probe zeigte dies roh als 6553.5 beziehungsweise 655.35. Diese Werte sind Sentinel-Markierungen für ungenutzte Remote-Sollwerte und werden im Adapter inzwischen als `null` veröffentlicht. `0xFFFF` ist als Steuerwert gesperrt; `maxBatteryCurrent` bleibt davon unberührt und wurde korrekt als 50 A gelesen.
 
-Der unabhängige Abschlussreview bestätigte vor den realen Gets alle sechs ursprünglichen Control-Fixes. Eine zusätzlich entdeckte TEXT-CRLF-Suffix-Mehrdeutigkeit bleibt ein Gate für reale Set-Tests und Release, beeinflusst aber nicht die strenge HEX-Get-Decodierung dieser Nachweise.
+Der unabhängige Abschlussreview bestätigte vor den realen Gets alle sechs ursprünglichen Control-Fixes. Die zusätzlich entdeckte TEXT-CRLF-Suffix-Mehrdeutigkeit wurde vor den Set-Tests ebenfalls behoben und über 61 Split-Positionen sowie 256 Orphan-Bytes erneut bestätigt.
+
+## Reale kontrollierte Set-Validierung
+
+Nach ausdrücklicher Benutzerfreigabe wurde MPPT 1 einmalig mit dem finalen Paket getestet. MPPT 2 blieb unverändert. Das Protokoll enthält alle TX-/RX-Frames und Set-Echos:
+
+- Charger Aus: `:80002000447`, Readback `false`.
+- Charger Ein: `:8000200014A`, Readback `true`.
+- External Control: `:80E2000051A`, Readback `external`.
+- 50 A: `:8152000F40123`, Readback 50 A.
+- 10 A: `:81520006400B4`, Readback 10 A.
+- Erneut 50 A und Stand-alone: `:80E2000001F`, Readback `standalone`.
+
+Final blieben Device Mode `true`, Network Mode `standalone`, persistentes Maximum 50 A und Spannungssollwert `null`. `chargeCurrentLimit` blieb nach Stand-alone als zuletzt gelesener Wert 50 A erhalten, ohne die persistente Einstellung zu verändern. Es wurden keine Fehler, Timeouts oder Wiederherstellungs-Sets benötigt. Beide Produktivinstanzen wurden anschließend mit frischen TEXT-Werten erneut bestätigt.
+
+Die abschließende unabhängige Gegenprobe zu `58f5d68` bestätigte sämtliche ursprünglichen und neuen Parser-/Control-Reproduktionen als behoben, einschließlich keines automatischen Supervisor-Resume und korrekter Sentinel-/Null-Behandlung.
