@@ -135,8 +135,7 @@ The complete audit is documented in [docs/audit-2026-11-17.md](docs/audit-2026-1
 The production dependency audit has no findings. The development toolchain audit still reports a transitive `picomatch` ReDoS issue through `tinyglobby`/TypeScript-ESLint, for which no corrected compatible release chain was available at the time of testing. It affects only development globbing with potentially malicious patterns, not adapter operation or VE.Direct processing.
 
 ## Changelog
-
-### **WORK IN PROGRESS**
+### 0.6.0 (2026-11-19)
 
 - (joerg) Add opt-in raw TCP serial-server transport with strict host/port validation, real socket integration tests, and the existing parser, reconnect, and HEX safety semantics.
 

@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "vedirect",
-    "version": "0.5.1",
+    "version": "0.6.0",
     "news": {
+      "0.6.0": {
+        "en": "Add opt-in raw TCP serial-server transport with strict host/port validation, real socket integration tests, and the existing parser, reconnect, and HEX safety semantics.",
+        "de": "Fügen Sie Opt-In Raw-TCP-Transport mit strenger Host/Port-Validierung, echten Socket-Tests und vorhandener Parser-, Reconnect- und HEX-Security-Semantik hinzu.",
+        "ru": "Добавьте опциональный транспорт последовательного сервера TCP со строгой проверкой хоста и порта, реальными тестами интеграции сокетов и существующей семантикой синтаксического анализатора, повторного подключения и безопасности HEX.",
+        "pt": "Adicione transporte serial TCP bruto opcional com validação rigorosa de host/porta, testes reais de integração de soquetes e semântica de parser, reconexão e HEX.",
+        "nl": "Voeg daar opt-in RAW TCP seriële servertransport aan toe met strikte host/poortvalidatie, integratietests met echte sockets en de bestaande parser-, reconnect- en HEX-veiligheidssemantiek.",
+        "fr": "Ajoutez le transport TCP brut optionnel avec une validation hôte/port stricte, des tests d'intégration des sockets réels et la sémantique de sécurité HEX existante.",
+        "it": "Aggiunga il trasporto seriale TCP raw opt-in con rigorosa convalida host/porta, test di integrazione real socket e parser, reconnect ed HEX esistenti.",
+        "es": "Añada el transporte de servidores serie TCP sin procesar con una validación estricta de host/puerto, pruebas de integración de sockets reales y la semántica de seguridad HEX, reconexión y analizador existente.",
+        "pl": "Dodaj surowy transport seryjno-seryjny TCP z rygorystyczną walidacją hosta/portu, testami integracji rzeczywistych gniazd oraz istniejącą semantyką bezpieczeństwa parsera, ponownego połączenia i HEX.",
+        "uk": "Додайте необроблений транспорт послідовного сервера TCP із суворою перевіркою хост/порту, реальними тестами інтеграції сокетів та існуючим парсером, повторним підключенням та семантикою безпеки HEX.",
+        "zh-cn": "添加可选的原始 TCP 串行服务器传输，包括严格的主机/端口验证、真正的套接字集成测试以及现有的解析器、重新连接和十六进制安全语义。"
+      },
       "0.5.1": {
         "en": "Changed Dependabot auto-merge to the safe `pull_request` trigger; updated `@iobroker/testing` to 6.3.2 and adapter-core to 3.4.3.\nSupport virtual serial endpoints without a modem-control ioctl (`ENOTTY`); other set errors remain fatal.\nAdd a Pi 4 benchmark for sampling, TTL, CPU, and Redis state writes.\nProvide an English main README, retain the German documentation separately, and complete the admin translations.",
         "de": "Dependabot Auto-Merge wurde zum sicheren Pull_Request-Trigger geändert, @iobroker /testing auf 6.3.2 und Adapter-Core auf 3.4.3.\nUnterstützt serielle Endgeräte ohne Modemsteuerung ioctl (`ENOTTY`); andere Setfehler bleiben fatal.\nFüge einen Pi 4-Benchmark für Sampling, TTL, CPU und Redis State Writes hinzu.\nGeben Sie eine englische README-Datei an, bewahren Sie die deutsche Dokumentation separat auf.",
@@ -80,19 +93,6 @@
         "pl": "Optymalizacja kodu\n(Andiling) (ang.). Nowe nazwy produktów\n(Andiling) (ang.). Addd option for admin for the state expiration (ang.)\nRezultatem programu jest NodeJS 18/2018",
         "uk": "Оптимізація коду\n[Антилінг](https://github.com/andiling) Додати нові імена продуктів Vedirect\n[Антилінг](https://github.com/andiling) Додати параметр до адміністратора для закінчення терміну дії держави\nОновлення залежностей * тестування на NodeJS 18/20",
         "zh-cn": "守则的优化\n[导言](http://github.com/andiling) 新产品名称\n[导言](http://github.com/andiling) 增加国家到期期的专注\n最新受扶养人* 无助于18/20"
-      },
-      "0.1.2": {
-        "en": "Fix sentry issue, error in opening USB-Port",
-        "de": "Behebung des Wachproblems, Fehler beim Öffnen des USB-Anschlusses",
-        "ru": "Исправить проблему с часовым, ошибка при открытии USB-порта",
-        "pt": "Corrigir problema de sentinela, erro ao abrir a porta USB",
-        "nl": "Fix schildwachtkwestie, fout bij het openen van de USB-poort",
-        "fr": "Correction d'un problème de sentinelle, erreur lors de l'ouverture du port USB",
-        "it": "Risolto il problema della sentinella, errore nell'apertura della porta USB",
-        "es": "Solucionar problema de centinela, error al abrir el puerto USB",
-        "pl": "Napraw problem z działkiem, błąd podczas otwierania portu USB",
-        "zh-cn": "修复哨兵问题，打开USB端口时出错",
-        "uk": "Виправлено проблему Sentry, помилка відкриття USB-порту"
       }
     },
     "titleLang": {
