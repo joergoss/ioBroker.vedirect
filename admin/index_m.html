@@ -38,6 +38,15 @@
 						;
 				}
 			});
+			function updateConnectionFields() {
+				var useTcp = $('#byTCPIP').prop('checked') === true;
+				$('#serialSettings').toggle(!useTcp);
+				$('.tcp-setting').toggle(useTcp);
+				$('#USBDevice').prop('required', !useTcp);
+				$('#tcpHost, #tcpPort').prop('required', useTcp);
+			}
+			$('#byTCPIP').on('change', updateConnectionFields);
+			updateConnectionFields();
 			onChange(false);
 			// reinitialize all the Materialize labels on the page if you are dynamically adding inputs:
 			if (M) M.updateTextFields();
@@ -73,10 +82,33 @@
 		<p class="translate title">Please choose your preferred settings</p>
 
 		<div class="row">
+			<div class="col s12">
+				<label>
+					<input type="checkbox" id="byTCPIP" class="value">
+					<span class="translate">Use a raw TCP serial server instead of a local serial port</span>
+				</label>
+			</div>
+		</div>
 
-			<div class="input-field col s12 m6 l4">
-				<input placeholder="Example : /dev/ttyUSB1" id="USBDevice" type="text" class="value" required>
+		<div class="row">
+
+			<div class="input-field col s12 m6 l4" id="serialSettings">
+				<input placeholder="Example : /dev/ttyUSB1" id="USBDevice" type="text" class="value">
 				<label for="USBDevice" class="translate">VE.Direct serial port</label>
+			</div>
+
+			<div class="input-field col s12 m6 l4 tcp-setting" style="display: none;">
+				<input placeholder="Example: 192.168.1.50" id="tcpHost" type="text" class="value">
+				<label for="tcpHost" class="translate">Raw TCP serial server hostname or IP address</label>
+			</div>
+
+			<div class="input-field col s12 m6 l4 tcp-setting" style="display: none;">
+				<input placeholder="Example: 1234" id="tcpPort" type="number" min="1" max="65535" step="1" class="value">
+				<label for="tcpPort" class="translate">Raw TCP serial server port</label>
+			</div>
+
+			<div class="col s12 tcp-setting" style="display: none;">
+				<p class="translate">Raw TCP is unencrypted and unauthenticated. Use only a trusted network. Telnet and RFC2217 negotiation are not supported.</p>
 			</div>
 
 			<div class="input-field col s12 m6 l4">
