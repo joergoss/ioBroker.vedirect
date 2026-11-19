@@ -10,5 +10,9 @@
     "Enable dynamic charge current control": "Enable dynamic charge current control",
     "Current control safety cap (A)": "Current control safety cap (A)",
     "Current limit refresh interval (seconds)": "Current limit refresh interval (seconds)",
-    "Loss of external control returns the charger to stand-alone operation and its persistent maximum current; it is not a fail-safe shutdown.": "Loss of external control returns the charger to stand-alone operation and its persistent maximum current; it is not a fail-safe shutdown."
+    "Loss of external control returns the charger to stand-alone operation and its persistent maximum current; it is not a fail-safe shutdown.": "Loss of external control returns the charger to stand-alone operation and its persistent maximum current; it is not a fail-safe shutdown.",
+    "Use a raw TCP serial server instead of a local serial port": "Use a raw TCP serial server instead of a local serial port",
+    "Raw TCP serial server hostname or IP address": "Raw TCP serial server hostname or IP address",
+    "Raw TCP serial server port": "Raw TCP serial server port",
+    "Raw TCP is unencrypted and unauthenticated. Use only a trusted network. Telnet and RFC2217 negotiation are not supported.": "Raw TCP is unencrypted and unauthenticated. Use only a trusted network. Telnet and RFC2217 negotiation are not supported."
 }

@@ -10,5 +10,9 @@
     "Enable dynamic charge current control": "Ativar o controle dinâmico da corrente de carga",
     "Current control safety cap (A)": "Limite de segurança do controle de corrente (A)",
     "Current limit refresh interval (seconds)": "Intervalo de atualização do limite de corrente (segundos)",
-    "Loss of external control returns the charger to stand-alone operation and its persistent maximum current; it is not a fail-safe shutdown.": "A perda do controle externo faz o carregador voltar à operação autônoma e à corrente máxima persistente configurada; isso não representa um desligamento à prova de falhas."
+    "Loss of external control returns the charger to stand-alone operation and its persistent maximum current; it is not a fail-safe shutdown.": "A perda do controle externo faz o carregador voltar à operação autônoma e à corrente máxima persistente configurada; isso não representa um desligamento à prova de falhas.",
+    "Use a raw TCP serial server instead of a local serial port": "Usar um servidor serial Raw TCP em vez de uma porta serial local",
+    "Raw TCP serial server hostname or IP address": "Nome do host ou endereço IP do servidor serial Raw TCP",
+    "Raw TCP serial server port": "Porta do servidor serial Raw TCP",
+    "Raw TCP is unencrypted and unauthenticated. Use only a trusted network. Telnet and RFC2217 negotiation are not supported.": "O Raw TCP não oferece criptografia nem autenticação. Use-o somente em uma rede confiável. As negociações Telnet e RFC2217 não são suportadas."
 }

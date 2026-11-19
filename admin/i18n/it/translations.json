@@ -10,5 +10,9 @@
     "Loss of external control returns the charger to stand-alone operation and its persistent maximum current; it is not a fail-safe shutdown.": "In caso di perdita del controllo esterno, il caricabatterie torna al funzionamento autonomo e alla corrente massima memorizzata in modo persistente; non si tratta di uno spegnimento di sicurezza in caso di guasto.",
     "Please choose your preferred settings": "Scegli le impostazioni preferite",
     "State expiration (seconds)": "Scadenza dello stato (secondi)",
-    "VE.Direct serial port": "Porta seriale VE.Direct"
+    "VE.Direct serial port": "Porta seriale VE.Direct",
+    "Use a raw TCP serial server instead of a local serial port": "Utilizza un server seriale Raw TCP invece di una porta seriale locale",
+    "Raw TCP serial server hostname or IP address": "Nome host o indirizzo IP del server seriale Raw TCP",
+    "Raw TCP serial server port": "Porta del server seriale Raw TCP",
+    "Raw TCP is unencrypted and unauthenticated. Use only a trusted network. Telnet and RFC2217 negotiation are not supported.": "Raw TCP non prevede cifratura né autenticazione. Utilizzarlo solo su una rete attendibile. Le negoziazioni Telnet e RFC2217 non sono supportate."
 }

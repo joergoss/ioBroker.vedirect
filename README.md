@@ -18,6 +18,7 @@ This adapter uses Sentry libraries to automatically report exceptions and code e
 - Controlled handling of asynchronous HEX messages and resynchronization.
 - Strict numeric validation; no silent partial `parseFloat` values, no `NaN`, and no invented zeroes.
 - Instance-scoped SerialPort 12 lifecycle with open/set/close timeouts, reconnect, and late-callback protection.
+- Optional direct raw TCP connections to serial servers without Telnet/RFC2217 encapsulation or additional runtime dependencies.
 - PTY/socat endpoints without a modem-control ioctl are accepted; other set errors remain fatal open errors.
 - `info.connection` is based exclusively on fresh, valid blocks.
 - Object migration before state writes and handled promise errors.
@@ -44,6 +45,14 @@ For real-world operation of two SmartSolar MPPTs, including a state overview and
 ### Serial interface
 
 Enter the device path, for example `/dev/ttyUSB0` or a stable `/dev/serial/by-id/...` path. The adapter uses **19200 baud, 8N1**. No other process may use the same port when the adapter starts.
+
+### Raw TCP serial server
+
+Enable `byTCPIP` only for a direct, unmodified TCP byte stream from a serial server. Enter its hostname or IP address in `tcpHost` and its port in `tcpPort`; no local serial-device path is required in this mode. The serial bridge itself must still be configured for **19200 baud, 8N1**.
+
+Raw TCP is unencrypted and unauthenticated. Use it only on a trusted network or through a separately secured tunnel, and never expose it unprotected to the internet. Telnet/RFC2217 negotiation, TLS, WebSockets, HTTP, and MQTT are not supported. The serial server and its single-client connection must not be shared with another adapter process or serial monitor.
+
+TCP uses the same checksum-valid parser, freshness checks, bounded lifecycle, reconnect handling, and optional HEX transaction rules as a local serial connection. See [docs/raw-tcp.md](docs/raw-tcp.md) for configuration, security, and validation limits.
 
 ### State expiration (`expireTime`)
 
@@ -126,6 +135,11 @@ The complete audit is documented in [docs/audit-2026-11-17.md](docs/audit-2026-1
 The production dependency audit has no findings. The development toolchain audit still reports a transitive `picomatch` ReDoS issue through `tinyglobby`/TypeScript-ESLint, for which no corrected compatible release chain was available at the time of testing. It affects only development globbing with potentially malicious patterns, not adapter operation or VE.Direct processing.
 
 ## Changelog
+
+### **WORK IN PROGRESS**
+
+- (joerg) Add opt-in raw TCP serial-server transport with strict host/port validation, real socket integration tests, and the existing parser, reconnect, and HEX safety semantics.
+
 ### 0.5.1 (2026-11-18)
 
 - (joerg) Changed Dependabot auto-merge to the safe `pull_request` trigger; updated `@iobroker/testing` to 6.3.2 and adapter-core to 3.4.3.

@@ -168,6 +168,9 @@
   },
   "native": {
     "byUSB": true,
+    "byTCPIP": false,
+    "tcpHost": "",
+    "tcpPort": 0,
     "USBDevice": "",
     "expireTime": 0,
     "messageBuffer": 0,
