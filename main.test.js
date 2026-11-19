@@ -21,9 +21,11 @@ function harness() {
         onFrame: undefined,
         onValidFrame: undefined,
         onError: undefined,
+        onPortClosed: undefined,
     };
     adapter.config = { USBDevice: '/dev/fake', expireTime: 0, messageBuffer: 0 };
     adapter.serialPortPath = '/dev/fake';
+    adapter.connectionTarget = '/dev/fake';
     adapter.namespace = 'vedirect.0';
     adapter.log = { debug: sinon.stub(), info: sinon.stub(), warn: sinon.stub(), error: sinon.stub() };
     adapter.setObjectNotExistsAsync = sinon.stub().resolves();
@@ -389,6 +391,36 @@ describe('VE.Direct watchdog and parser integration', () => {
         expect(adapter.connectionState).to.equal(false);
     });
 
+    it('immediately invalidates queued data on remote close and preserves the HEX close handler', async () => {
+        const adapter = harness();
+        const previousPortClosed = sinon.stub();
+        adapter.com.onPortClosed = previousPortClosed;
+        adapter.initConnectionObject = sinon.stub().resolves();
+        adapter.watchDog = sinon.stub().resolves();
+        await adapter.onReady();
+        clearInterval(adapter.watchDogInterval);
+        adapter.watchDogInterval = undefined;
+        await adapter.safeSetConnectionState(true);
+        adapter.pendingSample = { V: 11.1 };
+        adapter.sampleTimer = setTimeout(() => undefined, 10000);
+        adapter.pendingFrameBatch = {
+            values: { V: 22.2 },
+            generation: adapter.connectionGeneration,
+            receivedAt: Date.now(),
+        };
+        const generation = adapter.connectionGeneration;
+        const closeError = new Error('remote close');
+        adapter.com.onPortClosed(closeError);
+        expect(previousPortClosed.calledOnceWithExactly(closeError)).to.equal(true);
+        expect(adapter.pendingSample).to.equal(null);
+        expect(adapter.pendingFrameBatch).to.equal(null);
+        expect(adapter.sampleTimer).to.equal(undefined);
+        expect(adapter.connectionGeneration).to.equal(generation + 1);
+        expect(adapter.connectionRequested).to.equal(false);
+        await flush();
+        expect(adapter.connectionState).to.equal(false);
+    });
+
     it('deduplicates overlapping watchdog operations', async () => {
         const adapter = harness();
         let release;
@@ -546,6 +578,55 @@ describe('VE.Direct configuration and unload', () => {
             await adapter.readyPromise;
             expect(adapter.log.error.called).to.equal(true);
             expect(adapter.watchDogInterval).to.equal(undefined);
+        });
+    }
+
+    it('opens a validated raw TCP target without requiring a local serial device', async () => {
+        const adapter = harness();
+        adapter.config = {
+            byTCPIP: true,
+            tcpHost: ' 127.0.0.1 ',
+            tcpPort: '1234',
+            USBDevice: '',
+            expireTime: 0,
+            messageBuffer: 0,
+        };
+        adapter.initConnectionObject = sinon.stub().resolves();
+        await adapter.onReady();
+        clearInterval(adapter.watchDogInterval);
+        adapter.watchDogInterval = undefined;
+        await adapter.activeWatchDog;
+        expect(adapter.serialPortPath).to.equal('');
+        expect(adapter.connectionTarget).to.deep.equal({ host: '127.0.0.1', port: 1234 });
+        expect(Object.isFrozen(adapter.connectionTarget)).to.equal(true);
+        expect(adapter.com.open.calledOnceWithExactly(adapter.connectionTarget)).to.equal(true);
+    });
+
+    it('retains the existing serial configuration unless raw TCP is explicitly enabled', () => {
+        const adapter = harness();
+        adapter.config = { USBDevice: ' /dev/ttyUSB9 ', byTCPIP: false, tcpHost: 'ignored', tcpPort: 1234 };
+        expect(adapter.configureConnectionTarget()).to.equal('/dev/ttyUSB9');
+        expect(adapter.connectionTarget).to.equal('/dev/ttyUSB9');
+    });
+
+    for (const [host, port] of [
+        ['', 1234],
+        ['http://127.0.0.1', 1234],
+        ['127.0.0.1/path', 1234],
+        ['127.0.0.1', 0],
+        ['127.0.0.1', 65536],
+        ['127.0.0.1', 12.5],
+        ['127.0.0.1', '1e3'],
+    ]) {
+        it(`rejects invalid raw TCP target ${host}:${port} without opening a connection`, async () => {
+            const adapter = harness();
+            adapter.config = { byTCPIP: true, tcpHost: host, tcpPort: port, expireTime: 0, messageBuffer: 0 };
+            adapter.initConnectionObject = sinon.stub().resolves();
+            adapter.handleReady();
+            await adapter.readyPromise;
+            expect(adapter.com.open.called).to.equal(false);
+            expect(adapter.watchDogInterval).to.equal(undefined);
+            expect(adapter.log.error.called).to.equal(true);
         });
     }
 

@@ -14,6 +14,7 @@ Standardmäßig read-only ioBroker-Adapter für Victron-Geräte mit serieller VE
 - Kontrollierte Behandlung asynchroner HEX-Nachrichten und Wiederaufsynchronisation.
 - Strikte numerische Validierung; keine stillen `parseFloat`-Teilwerte, kein `NaN` und keine erfundenen Nullen.
 - Instanzgebundener SerialPort-12-Lifecycle mit Open-/Set-/Close-Timeouts, Reconnect und Late-Callback-Schutz.
+- Optionaler direkter Raw-TCP-Transport zu Serial-Servern ohne Telnet/RFC2217-Kapselung und ohne zusätzliche Runtime-Abhängigkeit.
 - PTY-/socat-Endpunkte ohne Modem-Control-Ioctl werden akzeptiert; andere Set-Fehler bleiben harte Open-Fehler.
 - `info.connection` folgt ausschließlich frischen gültigen Blöcken.
 - Objekt-Migration vor State-Schreiben sowie behandelte Promise-Fehler.
@@ -40,6 +41,14 @@ Für den realen Betrieb von zwei SmartSolar-MPPTs einschließlich State-Übersic
 ### Serielle Schnittstelle
 
 Den Gerätepfad eintragen, beispielsweise `/dev/ttyUSB0` oder einen stabilen `/dev/serial/by-id/...`-Pfad. Der Adapter verwendet **19200 Baud, 8N1**. Vor dem Start darf kein anderer Prozess denselben Port verwenden.
+
+### Raw-TCP-Serial-Server
+
+`byTCPIP` nur für einen direkten, unveränderten TCP-Bytestream eines Serial-Servers aktivieren. Hostname oder IP-Adresse in `tcpHost` und den Port in `tcpPort` eintragen; in diesem Modus ist kein lokaler serieller Gerätepfad erforderlich. Die Serial-Bridge selbst muss weiterhin auf **19200 Baud, 8N1** konfiguriert sein.
+
+Raw TCP ist unverschlüsselt und ohne Authentifizierung. Nur in einem vertrauenswürdigen Netz oder über einen separat abgesicherten Tunnel verwenden und niemals ungeschützt ins Internet freigeben. Telnet-/RFC2217-Aushandlung, TLS, WebSockets, HTTP und MQTT werden nicht unterstützt. Serial-Server und Single-Client-Verbindung dürfen nicht mit einem weiteren Adapterprozess oder Serial Monitor geteilt werden.
+
+TCP verwendet denselben checksumgültigen Parser, dieselben Frischeprüfungen, den begrenzten Lifecycle, Reconnect und die optionalen HEX-Transaktionsregeln wie eine lokale serielle Verbindung. Konfiguration, Sicherheit und Validierungsgrenzen stehen in [docs/raw-tcp.md](docs/raw-tcp.md).
 
 ### State-Ablaufzeit (`expireTime`)
 
@@ -122,11 +131,17 @@ Der vollständige Audit steht in [docs/audit-2026-11-17.md](docs/audit-2026-11-1
 Der Produktions-Audit ist ohne Befund. Im Entwicklungs-Toolchain-Audit verbleibt eine transitive `picomatch`-ReDoS-Meldung über `tinyglobby`/TypeScript-ESLint, für die zum Prüfzeitpunkt keine korrigierte kompatible Release-Kette verfügbar ist. Sie betrifft ausschließlich Entwicklungs-Globbing mit potenziell bösartigen Patterns, nicht den Adapterbetrieb oder die VE.Direct-Verarbeitung.
 
 ## Changelog
+
 ### **WORK IN PROGRESS**
+
+- (joerg) Optionaler Raw-TCP-Serial-Server-Transport mit strenger Host-/Port-Validierung, echten Socket-Integrationstests sowie unverändertem Parser, Reconnect und HEX-Sicherheitsregeln.
+
+### 0.5.1 (2026-11-18)
 
 - (joerg) Dependabot-Auto-Merge auf sicheren `pull_request`-Trigger umgestellt; `@iobroker/testing` 6.3.2 und adapter-core 3.4.3 aktualisiert.
 - (joerg) Virtuelle serielle Endpunkte ohne Modem-Control-Ioctl (`ENOTTY`) unterstützt; andere Set-Fehler bleiben hart.
 - (joerg) Pi4-Benchmark für Sampling, TTL, CPU und Redis-State-Writes ergänzt.
+- (joerg) Englische Hauptdokumentation, separate deutsche Dokumentation und vollständige Admin-Übersetzungen ergänzt.
 
 ### 0.5.0 (2026-11-18)
 

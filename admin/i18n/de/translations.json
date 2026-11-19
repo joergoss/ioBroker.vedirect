@@ -10,5 +10,9 @@
     "Enable dynamic charge current control": "Dynamische Ladestromsteuerung aktivieren",
     "Current control safety cap (A)": "Sicherheitsobergrenze für Stromsteuerung (A)",
     "Current limit refresh interval (seconds)": "Aktualisierungsintervall des Stromlimits (Sekunden)",
-    "Loss of external control returns the charger to stand-alone operation and its persistent maximum current; it is not a fail-safe shutdown.": "Bei Verlust der externen Steuerung kehrt der Laderegler zu Stand-alone und seinem persistenten Maximalstrom zurück; dies ist keine ausfallsichere Abschaltung."
+    "Loss of external control returns the charger to stand-alone operation and its persistent maximum current; it is not a fail-safe shutdown.": "Bei Verlust der externen Steuerung kehrt der Laderegler zu Stand-alone und seinem persistenten Maximalstrom zurück; dies ist keine ausfallsichere Abschaltung.",
+    "Use a raw TCP serial server instead of a local serial port": "Raw-TCP-Serial-Server statt lokaler serieller Schnittstelle verwenden",
+    "Raw TCP serial server hostname or IP address": "Hostname oder IP-Adresse des Raw-TCP-Serial-Servers",
+    "Raw TCP serial server port": "Port des Raw-TCP-Serial-Servers",
+    "Raw TCP is unencrypted and unauthenticated. Use only a trusted network. Telnet and RFC2217 negotiation are not supported.": "Raw TCP ist unverschlüsselt und ohne Authentifizierung. Nur in vertrauenswürdigen Netzen verwenden. Telnet- und RFC2217-Aushandlung werden nicht unterstützt."
 }

@@ -2,6 +2,7 @@
 
 const { EventEmitter } = require('node:events');
 const { expect } = require('chai');
+const { SerialPortStream } = require('@serialport/stream');
 const { VeDirectCom } = require('./lib/veDirectCom');
 
 class FakeSerialPort extends EventEmitter {
@@ -191,6 +192,75 @@ describe('VeDirectCom serial lifecycle', () => {
         await com.close();
     });
 
+    it('cancels a cancellation-capable pending open immediately and applies the close deadline to native close', async () => {
+        const port = new FakeSerialPort();
+        port.supportsOpenCancellation = true;
+        let releaseClose;
+        port.closeGate = new Promise(resolve => {
+            releaseClose = resolve;
+        });
+        const com = new VeDirectCom((_path, _options, _callback) => port, { openTimeoutMs: 500, closeTimeoutMs: 20 });
+        const opening = com.open('pending');
+        const observedOpen = expect(opening).to.be.rejectedWith('closed while opening');
+
+        const closing = com.close();
+        expect(port.closeCalls).to.equal(1);
+        expect(port.isOpen).to.equal(false);
+        await expect(closing).to.be.rejectedWith('close timed out');
+
+        releaseClose();
+        await observedOpen;
+        await immediate();
+        expect(com.port).to.equal(undefined);
+    });
+
+    it('uses late-open cleanup for a real SerialPortStream without a premature close error', async () => {
+        let finishOpen;
+        const nativeOpen = new Promise(resolve => {
+            finishOpen = resolve;
+        });
+        let nativeCloseCalls = 0;
+        const nativePort = {
+            isOpen: true,
+            close: () => {
+                nativeCloseCalls++;
+                nativePort.isOpen = false;
+                return Promise.resolve();
+            },
+        };
+        const binding = { open: () => nativeOpen };
+        let stream;
+        const com = new VeDirectCom(
+            (path, options, callback) => {
+                stream = new SerialPortStream({ binding, path, baudRate: options.baudRate }, callback);
+                return stream;
+            },
+            { openTimeoutMs: 500, closeTimeoutMs: 50 },
+        );
+        const opening = com.open('delayed-stream');
+        const observedOpen = expect(opening).to.be.rejected;
+        const closing = com.close();
+        let closeSettled = false;
+        void closing.then(
+            () => {
+                closeSettled = true;
+            },
+            () => {
+                closeSettled = true;
+            },
+        );
+        await immediate();
+        expect(stream.opening).to.equal(true);
+        expect(nativeCloseCalls).to.equal(0);
+        expect(closeSettled).to.equal(false);
+
+        finishOpen(nativePort);
+        await closing;
+        await observedOpen;
+        expect(nativeCloseCalls).to.equal(1);
+        expect(com.port).to.equal(undefined);
+    });
+
     it('handles runtime errors and a close after an already closed port', async () => {
         const port = new FakeSerialPort();
         const reported = [];
@@ -205,7 +275,8 @@ describe('VeDirectCom serial lifecycle', () => {
         await com.open('fake');
         const error = new Error('runtime');
         port.emit('error', error);
-        expect(reported).to.deep.equal([error]);
+        port.emit('error', error);
+        expect(reported).to.deep.equal([error, error]);
         port.isOpen = false;
         port.emit('close');
         await com.close();

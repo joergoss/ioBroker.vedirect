@@ -2,6 +2,7 @@
 
 const utils = require('@iobroker/adapter-core');
 const { VeDirectCom } = require('./lib/veDirectCom');
+const { normalizeTcpTarget } = require('./lib/veDirectTcpPort');
 const { VE_DIRECT_FIELDS } = require('./lib/veDirect/fields');
 const { CAPABILITY_BITS, NETWORK_MODES, encodeRaw, hasCapability } = require('./lib/veDirect/hexFields');
 
@@ -16,6 +17,7 @@ class Vedirect extends utils.Adapter {
         super({ ...options, name: 'vedirect' });
         this.com = new VeDirectCom();
         this.serialPortPath = '';
+        this.connectionTarget = undefined;
         this.expireSeconds = 0;
         this.samplingSeconds = 0;
         this.lastFrameTime = 0;
@@ -128,8 +130,7 @@ class Vedirect extends utils.Adapter {
                 await this.subscribeStatesAsync('control.*');
             }
         }
-        this.serialPortPath = String(this.config.USBDevice || '').trim();
-        if (!this.serialPortPath || this.serialPortPath === '/dev/xxx') {
+        if (!this.configureConnectionTarget()) {
             this.log.error('Configure a valid VE.Direct serial port before starting the adapter');
             return;
         }
@@ -140,12 +141,42 @@ class Vedirect extends utils.Adapter {
             void this.ensureHexBootstrap();
         };
         this.com.onFrame = frame => this.acceptFrame(frame);
-        this.com.onError = error => this.logThrottled('VE.Direct serial error: ', error);
+        this.com.onError = error => this.logThrottled('VE.Direct connection error: ', error);
+        const previousPortClosed = this.com.onPortClosed;
+        this.com.onPortClosed = error => {
+            if (previousPortClosed) {
+                try {
+                    previousPortClosed(error);
+                } catch (callbackError) {
+                    this.logThrottled('VE.Direct HEX close handler failed: ', callbackError);
+                }
+            }
+            void this.safeSetConnectionState(false).catch(stateError => {
+                if (!this.unloaded) {
+                    this.logThrottled('VE.Direct disconnect handling failed: ', stateError);
+                }
+            });
+        };
         if (this.unloaded) {
             return;
         }
         void this.watchDog();
         this.watchDogInterval = setInterval(() => void this.watchDog(), WATCHDOG_INTERVAL_MS);
+    }
+
+    configureConnectionTarget() {
+        if (this.config.byTCPIP === true) {
+            this.serialPortPath = '';
+            this.connectionTarget = normalizeTcpTarget({
+                host: this.config.tcpHost,
+                port: this.config.tcpPort,
+            });
+            return this.connectionTarget;
+        }
+        this.serialPortPath = String(this.config.USBDevice || '').trim();
+        this.connectionTarget =
+            this.serialPortPath && this.serialPortPath !== '/dev/xxx' ? this.serialPortPath : undefined;
+        return this.connectionTarget;
     }
 
     async initConnectionObject() {
@@ -338,7 +369,7 @@ class Vedirect extends utils.Adapter {
     }
 
     async performWatchDog() {
-        if (this.unloaded || !this.serialPortPath) {
+        if (this.unloaded || !this.connectionTarget) {
             return;
         }
         if (this.isFresh() && this.com.isOpen() && this.connectionRequested !== false) {
@@ -363,10 +394,10 @@ class Vedirect extends utils.Adapter {
             if (this.unloaded) {
                 return;
             }
-            await this.com.open(this.serialPortPath);
+            await this.com.open(this.connectionTarget);
         } catch (error) {
             if (!this.unloaded) {
-                this.logThrottled('Could not open/reopen VE.Direct port: ', error);
+                this.logThrottled('Could not open/reopen VE.Direct connection: ', error);
                 await this.safeSetConnectionState(false);
             }
         }

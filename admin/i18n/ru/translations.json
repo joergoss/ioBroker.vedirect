@@ -10,5 +10,9 @@
     "Loss of external control returns the charger to stand-alone operation and its persistent maximum current; it is not a fail-safe shutdown.": "При потере внешнего управления зарядное устройство возвращается к автономной работе с сохранённым значением максимального тока; это не является безопасным отключением при отказе.",
     "Please choose your preferred settings": "Пожалуйста, выберите предпочитаемые настройки",
     "State expiration (seconds)": "Срок действия состояния (секунды)",
-    "VE.Direct serial port": "Последовательный порт VE.Direct"
+    "VE.Direct serial port": "Последовательный порт VE.Direct",
+    "Use a raw TCP serial server instead of a local serial port": "Использовать сервер последовательного интерфейса Raw TCP вместо локального последовательного порта",
+    "Raw TCP serial server hostname or IP address": "Имя хоста или IP-адрес сервера последовательного интерфейса Raw TCP",
+    "Raw TCP serial server port": "Порт сервера последовательного интерфейса Raw TCP",
+    "Raw TCP is unencrypted and unauthenticated. Use only a trusted network. Telnet and RFC2217 negotiation are not supported.": "Raw TCP не обеспечивает ни шифрования, ни аутентификации. Используйте его только в доверенной сети. Согласование Telnet и RFC2217 не поддерживается."
 }
