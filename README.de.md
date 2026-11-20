@@ -13,7 +13,7 @@ Standardmäßig read-only ioBroker-Adapter für Victron-Geräte mit serieller VE
 - Alle 256 binären Checksumbytes, beliebige Serial-Chunk-Grenzen und mehrere Blöcke.
 - Kontrollierte Behandlung asynchroner HEX-Nachrichten und Wiederaufsynchronisation.
 - Strikte numerische Validierung; keine stillen `parseFloat`-Teilwerte, kein `NaN` und keine erfundenen Nullen.
-- Instanzgebundener SerialPort-12-Lifecycle mit Open-/Set-/Close-Timeouts, Reconnect und Late-Callback-Schutz.
+- Instanzgebundener SerialPort-Lifecycle mit Open-/Set-/Close-Timeouts, Reconnect und Late-Callback-Schutz.
 - Optionaler direkter Raw-TCP-Transport zu Serial-Servern ohne Telnet/RFC2217-Kapselung und ohne zusätzliche Runtime-Abhängigkeit.
 - PTY-/socat-Endpunkte ohne Modem-Control-Ioctl werden akzeptiert; andere Set-Fehler bleiben harte Open-Fehler.
 - `info.connection` folgt ausschließlich frischen gültigen Blöcken.
