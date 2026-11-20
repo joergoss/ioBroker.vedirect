@@ -37,6 +37,24 @@ TCP ändert ausschließlich den Transport, nicht das Protokoll:
 
 Verbindungsfehler wie `ECONNREFUSED`, DNS-Fehler und Timeouts bleiben sichtbar. Sie erzeugen keine Ersatzwerte, kein `NaN` und keine stillen Teil-Parses.
 
+## Read-only-Diagnoseprogramm (#8)
+
+Mit dem Diagnoseprogramm lässt sich ein Serial-Server prüfen, ohne eine ioBroker-Instanz zu starten oder deren Konfiguration zu ändern:
+
+```sh
+node tools/raw-tcp-probe.js 192.168.1.50 1234 12
+```
+
+Die ersten beiden Argumente sind Hostname/IP-Adresse und Port; das optionale dritte Argument ist die Messdauer in ganzen Sekunden (1–120, Standard 12). Das Programm öffnet genau eine begrenzte TCP-Verbindung und erzeugt keine HEX-Gets/Sets, Steuerbefehle oder Telnet-Aushandlung. Es verarbeitet den Stream mit dem produktiven Parser und gibt JSON aus, unter anderem:
+
+- `validFrameCount` und `lastValidFrameAt` für tatsächlich checksumgültige Blöcke sowie `lastFrame` und `lastFrameAt` für den letzten Block mit decodierten bekannten Feldern,
+- Parserzähler für Checksum-, Frame- und HEX-Fehler,
+- Verbindungsfehler und einen vorzeitigen Remote-Close,
+- `bytesWritten` und `readOnlyVerified` als Nachweis, dass kein einziges Byte zum Server gesendet wurde,
+- `ok` sowie maschinenlesbare `reasons` für eine automatisierte Auswertung.
+
+Exit-Code 0 bedeutet mindestens einen gültigen Block ohne erkannte Verbindungs-/Parserfehler und nachgewiesenermaßen null geschriebene Bytes. Exit-Code 1 kennzeichnet einen fehlgeschlagenen oder fehlerhaften Diagnoselauf, Exit-Code 2 eine ungültige Kommandozeile. `--help` zeigt die Kurzhilfe. Die Messung darf nur auf einem bereits freigegebenen Single-Client-Endpunkt erfolgen und ersetzt keine Freigabe durch den Benutzer.
+
 ## Validierungsgrenze und reale Victron-Probe
 
 Die automatisierte Suite verwendet echte TCP-Server und Sockets auf `127.0.0.1` mit dem produktiven Parser, Transport und HEX-Client. Zusätzliche adversariale Gegenproben mit kontrolliert verzögertem DNS bestätigen:

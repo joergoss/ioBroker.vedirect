@@ -52,7 +52,7 @@ Enable `byTCPIP` only for a direct, unmodified TCP byte stream from a serial ser
 
 Raw TCP is unencrypted and unauthenticated. Use it only on a trusted network or through a separately secured tunnel, and never expose it unprotected to the internet. Telnet/RFC2217 negotiation, TLS, WebSockets, HTTP, and MQTT are not supported. The serial server and its single-client connection must not be shared with another adapter process or serial monitor.
 
-TCP uses the same checksum-valid parser, freshness checks, bounded lifecycle, reconnect handling, and optional HEX transaction rules as a local serial connection. See [docs/raw-tcp.md](docs/raw-tcp.md) for configuration, security, and validation limits.
+TCP uses the same checksum-valid parser, freshness checks, bounded lifecycle, reconnect handling, and optional HEX transaction rules as a local serial connection. See [docs/raw-tcp.md](docs/raw-tcp.md) for configuration, security, and validation limits. A read-only endpoint diagnostic is available as `node tools/raw-tcp-probe.js <host> <port> [seconds]`; it reports real frame evidence and verifies that no bytes were written.
 
 ### State expiration (`expireTime`)
 
@@ -135,6 +135,11 @@ The complete audit is documented in [docs/audit-2026-11-17.md](docs/audit-2026-1
 The production dependency audit has no findings. The development toolchain audit still reports a transitive `picomatch` ReDoS issue through `tinyglobby`/TypeScript-ESLint, for which no corrected compatible release chain was available at the time of testing. It affects only development globbing with potentially malicious patterns, not adapter operation or VE.Direct processing.
 
 ## Changelog
+
+### **WORK IN PROGRESS**
+
+- (joerg) Add a read-only raw TCP diagnostic CLI with structured frame evidence, bounded runtime, and zero-byte-write verification (#8).
+
 ### 0.6.0 (2026-11-19)
 
 - (joerg) Add opt-in raw TCP serial-server transport with strict host/port validation, real socket integration tests, and the existing parser, reconnect, and HEX safety semantics.

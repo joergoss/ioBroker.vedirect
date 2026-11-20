@@ -48,7 +48,7 @@ Den Gerätepfad eintragen, beispielsweise `/dev/ttyUSB0` oder einen stabilen `/d
 
 Raw TCP ist unverschlüsselt und ohne Authentifizierung. Nur in einem vertrauenswürdigen Netz oder über einen separat abgesicherten Tunnel verwenden und niemals ungeschützt ins Internet freigeben. Telnet-/RFC2217-Aushandlung, TLS, WebSockets, HTTP und MQTT werden nicht unterstützt. Serial-Server und Single-Client-Verbindung dürfen nicht mit einem weiteren Adapterprozess oder Serial Monitor geteilt werden.
 
-TCP verwendet denselben checksumgültigen Parser, dieselben Frischeprüfungen, den begrenzten Lifecycle, Reconnect und die optionalen HEX-Transaktionsregeln wie eine lokale serielle Verbindung. Konfiguration, Sicherheit und Validierungsgrenzen stehen in [docs/raw-tcp.md](docs/raw-tcp.md).
+TCP verwendet denselben checksumgültigen Parser, dieselben Frischeprüfungen, den begrenzten Lifecycle, Reconnect und die optionalen HEX-Transaktionsregeln wie eine lokale serielle Verbindung. Konfiguration, Sicherheit und Validierungsgrenzen stehen in [docs/raw-tcp.md](docs/raw-tcp.md). Mit `node tools/raw-tcp-probe.js <Host> <Port> [Sekunden]` steht zusätzlich eine read-only-Diagnose bereit, die reale Frame-Nachweise ausgibt und bestätigt, dass keine Bytes geschrieben wurden.
 
 ### State-Ablaufzeit (`expireTime`)
 
@@ -135,6 +135,7 @@ Der Produktions-Audit ist ohne Befund. Im Entwicklungs-Toolchain-Audit verbleibt
 ### **WORK IN PROGRESS**
 
 - (joerg) Optionaler Raw-TCP-Serial-Server-Transport mit strenger Host-/Port-Validierung, echten Socket-Integrationstests sowie unverändertem Parser, Reconnect und HEX-Sicherheitsregeln.
+- (joerg) Read-only-Raw-TCP-Diagnoseprogramm mit strukturierten Frame-Nachweisen, begrenzter Laufzeit und Bestätigung null geschriebener Bytes (#8).
 
 ### 0.5.1 (2026-11-18)
 
