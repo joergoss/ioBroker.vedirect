@@ -818,7 +818,7 @@ describe('VeDirectCom serial lifecycle', () => {
         first.isOpen = true;
         firstOpenCallback();
         await immediate();
-        expect(first.isOpen).to.equal(false); // SerialPort 12: closing implies isOpen=false.
+        expect(first.isOpen).to.equal(false); // SerialPort: closing implies isOpen=false.
         expect(first.closeCalls).to.equal(1);
         // Register the reopen half-way into the initiator's close window, so the
         // initiator can time out while the native close is still outstanding.
