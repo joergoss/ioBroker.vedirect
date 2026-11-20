@@ -108,7 +108,7 @@ Der vollständige Audit steht in [docs/audit-2026-11-17.md](docs/audit-2026-11-1
 
 ## Dependency-Audit
 
-Der Produktions-Audit ist ohne Befund. Im Entwicklungs-Toolchain-Audit verbleibt eine transitive `picomatch`-ReDoS-Meldung über `tinyglobby`/TypeScript-ESLint, für die zum Prüfzeitpunkt keine korrigierte kompatible Release-Kette verfügbar ist. Sie betrifft ausschließlich Entwicklungs-Globbing mit potenziell bösartigen Patterns, nicht den Adapterbetrieb oder die VE.Direct-Verarbeitung.
+Produktions- und Entwicklungsabhängigkeiten weisen keine bekannten Sicherheitsmeldungen auf. Details stehen im [Audit](docs/audit-2026-11-17.md).
 
 ## Changelog
 
