@@ -3,7 +3,7 @@
 ## Release und Zielsystem
 
 - Fork-PR #4 wurde nach 10/10 relevanten grünen CI-Checks gemergt.
-- Release: [`v0.4.0`](https://github.com/joergoss/ioBroker.vedirect/releases/tag/v0.4.0), Release-Commit `4b275ba5a87a499ea1d454b32f9af522e3a0cc25`.
+- Release: [`v0.4.0`](https://github.com/joergoss/ioBroker.vedirect/releases/tag/v0.4.0), Release-Commit `fa4aaa45e6fc698b9615bf960628a18c924d477e`.
 - Der Release-Prozess führte erneut `npm run test:all` aus: 93 fachliche Tests, Package/Schema, TypeScript, ESLint ohne Fehler und Integration bestanden.
 - Kein NPM-Publishing; Installation aus dem Git-Tag beziehungsweise dessen HTTPS-Tarball.
 - Ziel ausschließlich pi4, Docker-Container `iob_iobroker`, ioBroker-Host `iobroker`, ARM64, Node.js 24.22.3.
