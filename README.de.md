@@ -15,6 +15,7 @@ Standardmäßig read-only ioBroker-Adapter für Victron-Geräte mit serieller VE
 - Strikte numerische Validierung; keine stillen `parseFloat`-Teilwerte, kein `NaN` und keine erfundenen Nullen.
 - Instanzgebundener SerialPort-12-Lifecycle mit Open-/Set-/Close-Timeouts, Reconnect und Late-Callback-Schutz.
 - Optionaler direkter Raw-TCP-Transport zu Serial-Servern ohne Telnet/RFC2217-Kapselung und ohne zusätzliche Runtime-Abhängigkeit.
+- Admin-5-`jsonConfig` mit bedingten Seriell-/TCP-Feldern, nativer Speichervalidierung und echten Browser-Persistenztests.
 - PTY-/socat-Endpunkte ohne Modem-Control-Ioctl werden akzeptiert; andere Set-Fehler bleiben harte Open-Fehler.
 - `info.connection` folgt ausschließlich frischen gültigen Blöcken.
 - Objekt-Migration vor State-Schreiben sowie behandelte Promise-Fehler.
@@ -122,6 +123,8 @@ npm run test:all
 
 `test:all` umfasst die fachliche Suite, Package-Checks, `checkJs`, ESLint und js-controller-Integration. Die CI-Matrix verwendet Node.js 22/24/26 auf Linux, Windows und macOS.
 
+`npm run test:admin` prüft die echte Admin-5-Konfiguration in Chrome mit Admin 7.6.20 und js-controller 6.0.11, einschließlich bedingter Felder, Validierung, Speichern, Reload und versteckter nativer Werte. Details stehen in [docs/admin-jsonconfig.md](docs/admin-jsonconfig.md).
+
 Die Tests umfassen unter anderem den exakten offiziellen FAQ-Frame, alle Chunk-Grenzen und Checksumbytes, HEX/Multiblock/Recovery, reale SmartSolar- und BMV-Vektoren, Serial-Fehler und hängende native Callbacks, State-/TTL-/Sampling-Verhalten sowie getrennte Instanzen.
 
 Der vollständige Audit steht in [docs/audit-2026-11-17.md](docs/audit-2026-11-17.md). Ein quantitativer Vergleich von Sampling, TTL, CPU und Redis-State-Writes steht in [docs/performance-2026-11-18.md](docs/performance-2026-11-18.md).
@@ -136,6 +139,7 @@ Der Produktions-Audit ist ohne Befund. Im Entwicklungs-Toolchain-Audit verbleibt
 
 - (joerg) Optionaler Raw-TCP-Serial-Server-Transport mit strenger Host-/Port-Validierung, echten Socket-Integrationstests sowie unverändertem Parser, Reconnect und HEX-Sicherheitsregeln.
 - (joerg) Read-only-Raw-TCP-Diagnoseprogramm mit strukturierten Frame-Nachweisen, begrenzter Laufzeit und Bestätigung null geschriebener Bytes (#8).
+- (joerg) Admin-5-`jsonConfig` mit bedingten Feldern, vollständigen Übersetzungen, Schema-/Validator-Tests und echtem Browser-Speichern/Reload-E2E (#9).
 
 ### 0.5.1 (2026-11-18)
 

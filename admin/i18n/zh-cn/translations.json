@@ -14,5 +14,10 @@
     "Use a raw TCP serial server instead of a local serial port": "使用 Raw TCP 串口服务器，而不是本地串口",
     "Raw TCP serial server hostname or IP address": "Raw TCP 串口服务器的主机名或 IP 地址",
     "Raw TCP serial server port": "Raw TCP 串口服务器端口",
-    "Raw TCP is unencrypted and unauthenticated. Use only a trusted network. Telnet and RFC2217 negotiation are not supported.": "Raw TCP 不加密，也不进行身份验证。请仅在可信网络中使用。不支持 Telnet 和 RFC2217 协商。"
+    "Raw TCP is unencrypted and unauthenticated. Use only a trusted network. Telnet and RFC2217 negotiation are not supported.": "Raw TCP 不加密，也不进行身份验证。请仅在可信网络中使用。不支持 Telnet 和 RFC2217 协商。",
+    "Enter a valid VE.Direct serial port": "请输入有效的 VE.Direct 串口",
+    "Enter a valid TCP hostname or IP address": "请输入有效的 TCP 主机名或 IP 地址",
+    "TCP port must be an integer between 1 and 65535": "TCP 端口必须是 1 到 65535 之间的整数",
+    "Enter a positive current in exact 0.1 A steps": "请输入正电流值，步长须精确为 0.1 A",
+    "Enter an integer from 5 to 50 seconds": "请输入 5 到 50 之间的整数秒数"
 }

@@ -19,6 +19,7 @@ This adapter uses Sentry libraries to automatically report exceptions and code e
 - Strict numeric validation; no silent partial `parseFloat` values, no `NaN`, and no invented zeroes.
 - Instance-scoped SerialPort 12 lifecycle with open/set/close timeouts, reconnect, and late-callback protection.
 - Optional direct raw TCP connections to serial servers without Telnet/RFC2217 encapsulation or additional runtime dependencies.
+- Admin 5 `jsonConfig` UI with conditional serial/TCP fields, native save validation, and real-browser persistence tests.
 - PTY/socat endpoints without a modem-control ioctl are accepted; other set errors remain fatal open errors.
 - `info.connection` is based exclusively on fresh, valid blocks.
 - Object migration before state writes and handled promise errors.
@@ -126,6 +127,8 @@ npm run test:all
 
 `test:all` includes the functional suite, package checks, `checkJs`, ESLint, and js-controller integration. The CI matrix uses Node.js 22/24/26 on Linux, Windows, and macOS.
 
+`npm run test:admin` validates the real Admin 5 configuration in Chrome with Admin 7.6.20 and js-controller 6.0.11, including conditional fields, validation, saving, reloading, and hidden native persistence. See [docs/admin-jsonconfig.md](docs/admin-jsonconfig.md).
+
 Tests include the exact official FAQ frame, all chunk boundaries and checksum bytes, HEX/multiblock/recovery behavior, real SmartSolar and BMV vectors, serial errors and hanging native callbacks, state/TTL/sampling behavior, and separate instances.
 
 The complete audit is documented in [docs/audit-2026-11-17.md](docs/audit-2026-11-17.md). A quantitative comparison of sampling, TTL, CPU, and Redis state writes is available in [docs/performance-2026-11-18.md](docs/performance-2026-11-18.md).
@@ -139,6 +142,7 @@ The production dependency audit has no findings. The development toolchain audit
 ### **WORK IN PROGRESS**
 
 - (joerg) Add a read-only raw TCP diagnostic CLI with structured frame evidence, bounded runtime, and zero-byte-write verification (#8).
+- (joerg) Migrate the configuration to Admin 5 `jsonConfig` with conditional fields, complete translations, schema/validator tests, and real-browser save/reload E2E (#9).
 
 ### 0.6.0 (2026-11-19)
 

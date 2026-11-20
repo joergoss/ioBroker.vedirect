@@ -1,0 +1,178 @@
+{
+  "i18n": true,
+  "type": "panel",
+  "items": {
+    "_generalInfo": {
+      "type": "staticText",
+      "text": "Please choose your preferred settings",
+      "xs": 12,
+      "sm": 12,
+      "md": 12,
+      "lg": 12,
+      "xl": 12
+    },
+    "byTCPIP": {
+      "type": "checkbox",
+      "label": "Use a raw TCP serial server instead of a local serial port",
+      "xs": 12,
+      "sm": 12,
+      "md": 6,
+      "lg": 4,
+      "xl": 4
+    },
+    "USBDevice": {
+      "type": "text",
+      "label": "VE.Direct serial port",
+      "hidden": "data.byTCPIP",
+      "validator": "data.byTCPIP || (typeof data.USBDevice === 'string' && data.USBDevice.trim() !== '' && data.USBDevice.trim() !== '/dev/xxx')",
+      "validatorErrorText": "Enter a valid VE.Direct serial port",
+      "validatorNoSaveOnError": true,
+      "xs": 12,
+      "sm": 12,
+      "md": 6,
+      "lg": 4,
+      "xl": 4
+    },
+    "tcpHost": {
+      "type": "text",
+      "label": "Raw TCP serial server hostname or IP address",
+      "hidden": "!data.byTCPIP",
+      "validator": "!data.byTCPIP || (typeof data.tcpHost === 'string' && data.tcpHost.trim() !== '' && !/[\\s\\/\\\\?#@]/.test(data.tcpHost.trim()) && ((data.tcpHost.trim().includes(':') && /^[0-9a-f:]+$/i.test(data.tcpHost.trim()) && data.tcpHost.trim().split(':').length >= 3) || (!data.tcpHost.trim().includes(':') && data.tcpHost.trim().length <= 253 && data.tcpHost.trim().split('.').every(label => /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/i.test(label)))))",
+      "validatorErrorText": "Enter a valid TCP hostname or IP address",
+      "validatorNoSaveOnError": true,
+      "xs": 12,
+      "sm": 12,
+      "md": 6,
+      "lg": 4,
+      "xl": 4
+    },
+    "tcpPort": {
+      "type": "number",
+      "label": "Raw TCP serial server port",
+      "min": 1,
+      "max": 65535,
+      "step": 1,
+      "hidden": "!data.byTCPIP",
+      "validator": "!data.byTCPIP || ((typeof data.tcpPort === 'number' || (typeof data.tcpPort === 'string' && /^[0-9]+$/.test(data.tcpPort))) && Number.isInteger(Number(data.tcpPort)) && Number(data.tcpPort) >= 1 && Number(data.tcpPort) <= 65535)",
+      "validatorErrorText": "TCP port must be an integer between 1 and 65535",
+      "validatorNoSaveOnError": true,
+      "xs": 12,
+      "sm": 12,
+      "md": 6,
+      "lg": 4,
+      "xl": 4
+    },
+    "_tcpWarning": {
+      "type": "infoBox",
+      "boxType": "warning",
+      "closeable": false,
+      "text": "Raw TCP is unencrypted and unauthenticated. Use only a trusted network. Telnet and RFC2217 negotiation are not supported.",
+      "hidden": "!data.byTCPIP",
+      "xs": 12,
+      "sm": 12,
+      "md": 12,
+      "lg": 12,
+      "xl": 12
+    },
+    "expireTime": {
+      "type": "number",
+      "label": "State expiration (seconds)",
+      "min": 0,
+      "step": 1,
+      "xs": 12,
+      "sm": 12,
+      "md": 6,
+      "lg": 4,
+      "xl": 4
+    },
+    "messageBuffer": {
+      "type": "number",
+      "label": "Frame sampling interval (seconds)",
+      "min": 0,
+      "step": 1,
+      "xs": 12,
+      "sm": 12,
+      "md": 6,
+      "lg": 4,
+      "xl": 4
+    },
+    "_hexInfo": {
+      "type": "staticText",
+      "text": "HEX access is disabled by default. Control functions change charger behaviour and require separate validation.",
+      "xs": 12,
+      "sm": 12,
+      "md": 12,
+      "lg": 12,
+      "xl": 12
+    },
+    "hexReadEnabled": {
+      "type": "checkbox",
+      "label": "Enable read-only HEX register queries",
+      "xs": 12,
+      "sm": 12,
+      "md": 4,
+      "lg": 4,
+      "xl": 4
+    },
+    "chargerControlEnabled": {
+      "type": "checkbox",
+      "label": "Enable charger on/off control",
+      "xs": 12,
+      "sm": 12,
+      "md": 4,
+      "lg": 4,
+      "xl": 4
+    },
+    "currentLimitControlEnabled": {
+      "type": "checkbox",
+      "label": "Enable dynamic charge current control",
+      "xs": 12,
+      "sm": 12,
+      "md": 4,
+      "lg": 4,
+      "xl": 4
+    },
+    "currentLimitMax": {
+      "type": "number",
+      "label": "Current control safety cap (A)",
+      "min": 0,
+      "step": 0.1,
+      "hidden": "!data.currentLimitControlEnabled",
+      "validator": "!data.currentLimitControlEnabled || (Number.isFinite(Number(data.currentLimitMax)) && Number(data.currentLimitMax) > 0 && Math.abs(Number(data.currentLimitMax) * 10 - Math.round(Number(data.currentLimitMax) * 10)) < 1e-9)",
+      "validatorErrorText": "Enter a positive current in exact 0.1 A steps",
+      "validatorNoSaveOnError": true,
+      "xs": 12,
+      "sm": 12,
+      "md": 6,
+      "lg": 4,
+      "xl": 4
+    },
+    "currentLimitRefreshSeconds": {
+      "type": "number",
+      "label": "Current limit refresh interval (seconds)",
+      "min": 5,
+      "max": 50,
+      "step": 1,
+      "hidden": "!data.currentLimitControlEnabled",
+      "validator": "!data.currentLimitControlEnabled || (Number.isInteger(Number(data.currentLimitRefreshSeconds)) && Number(data.currentLimitRefreshSeconds) >= 5 && Number(data.currentLimitRefreshSeconds) <= 50)",
+      "validatorErrorText": "Enter an integer from 5 to 50 seconds",
+      "validatorNoSaveOnError": true,
+      "xs": 12,
+      "sm": 12,
+      "md": 6,
+      "lg": 4,
+      "xl": 4
+    },
+    "_controlWarning": {
+      "type": "infoBox",
+      "boxType": "warning",
+      "closeable": false,
+      "text": "Loss of external control returns the charger to stand-alone operation and its persistent maximum current; it is not a fail-safe shutdown.",
+      "xs": 12,
+      "sm": 12,
+      "md": 12,
+      "lg": 12,
+      "xl": 12
+    }
+  }
+}
