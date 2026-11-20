@@ -29,10 +29,10 @@ function supportReason() {
     try {
         ({ SerialPort } = require('serialport'));
         // serialport lazy-loads the native addon on open. Load it here so a
-        // missing/incompatible SerialPort 12 binding causes an honest suite skip.
+        // missing/incompatible SerialPort binding causes an honest suite skip.
         require('@serialport/bindings-cpp/dist/load-bindings');
     } catch (error) {
-        return `SerialPort 12 native binding is unavailable: ${error.message}`;
+        return `SerialPort native binding is unavailable: ${error.message}`;
     }
     return undefined;
 }
@@ -240,7 +240,7 @@ class PtyProcess {
 
 const unsupported = supportReason();
 const ptyDescribe = unsupported ? describe.skip : describe;
-const suiteName = `VE.Direct real POSIX PTYs (SerialPort 12)${unsupported ? ` — SKIPPED: ${unsupported}` : ''}`;
+const suiteName = `VE.Direct real POSIX PTYs (SerialPort)${unsupported ? ` — SKIPPED: ${unsupported}` : ''}`;
 
 ptyDescribe(suiteName, function () {
     this.timeout(10000);
@@ -493,7 +493,7 @@ ptyDescribe(suiteName, function () {
         await helper.call('disconnect', { device: 'a' });
         if (process.platform === 'darwin') {
             // macOS reports a closed PTY master as repeated zero-byte reads.
-            // SerialPort 12's unixRead recursively retries that EOF forever and
+            // SerialPort's unixRead recursively retries that EOF forever and
             // emits no close, so recover the real Com explicitly before reopening.
             await bounded(a.com.close(), OPERATION_TIMEOUT_MS, 'macOS PTY EOF recovery');
         }

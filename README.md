@@ -17,7 +17,7 @@ This adapter uses Sentry libraries to automatically report exceptions and code e
 - Coverage of all 256 binary checksum bytes, arbitrary serial chunk boundaries, and multiple blocks.
 - Controlled handling of asynchronous HEX messages and resynchronization.
 - Strict numeric validation; no silent partial `parseFloat` values, no `NaN`, and no invented zeroes.
-- Instance-scoped SerialPort 12 lifecycle with open/set/close timeouts, reconnect, and late-callback protection.
+- Instance-scoped SerialPort lifecycle with open/set/close timeouts, reconnect, and late-callback protection.
 - Optional direct raw TCP connections to serial servers without Telnet/RFC2217 encapsulation or additional runtime dependencies.
 - Admin 5 `jsonConfig` UI with conditional serial/TCP fields, native save validation, and real-browser persistence tests.
 - PTY/socat endpoints without a modem-control ioctl are accepted; other set errors remain fatal open errors.
