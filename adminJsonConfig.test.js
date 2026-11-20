@@ -1,28 +1,53 @@
 'use strict';
 
 const fs = require('node:fs');
+const net = require('node:net');
 const { expect } = require('chai');
 const Ajv = require('@iobroker/testing/node_modules/ajv');
+const { normalizeTcpTarget } = require('./lib/veDirectTcpPort');
 
 const config = require('./admin/jsonConfig.json');
 const ioPackage = require('./io-package.json');
-const SCHEMA_URL =
-    'https://raw.githubusercontent.com/ioBroker/ioBroker.admin/master/packages/jsonConfig/schemas/jsonConfig.json';
+const schemas = {
+    minimum: require('./test/fixtures/jsonConfig-7.6.20.schema.json'),
+    current: require('./test/fixtures/jsonConfig-current.schema.json'),
+};
 const languages = ['de', 'es', 'fr', 'it', 'nl', 'pl', 'pt', 'ru', 'uk', 'zh-cn'];
 
 function evaluate(expression, data) {
     return new Function('data', `return (${expression});`)(data);
 }
 
+function runtimeAccepts(host) {
+    try {
+        normalizeTcpTarget({ host, port: 1234 });
+        return true;
+    } catch {
+        return false;
+    }
+}
+
 describe('Admin 5 jsonConfig', () => {
-    it('is valid against the current official schema and keeps every native key/default', async () => {
-        const response = await fetch(SCHEMA_URL, { signal: AbortSignal.timeout(10000) });
-        expect(response.ok).to.equal(true);
-        const schema = await response.json();
-        const ajv = new Ajv({ strict: false, allErrors: true });
-        const valid = ajv.validate(schema, config);
-        expect(ajv.errorsText(undefined, { separator: '\n' })).to.equal('No errors');
-        expect(valid).to.equal(true);
+    it('is valid against pinned minimum/current schemas and keeps every native key/default', () => {
+        for (const [name, schema] of Object.entries(schemas)) {
+            const candidate = name === 'minimum' ? structuredClone(config) : config;
+            if (name === 'minimum') {
+                // Admin 7.6.20's schema misspells the renderer's actual
+                // `closeable` property as `closable`. Transform only this test
+                // candidate; production keeps the non-dismissible warning.
+                for (const item of Object.values(candidate.items)) {
+                    if (Object.hasOwn(item, 'closeable')) {
+                        item.closable = item.closeable;
+                        delete item.closeable;
+                    }
+                }
+            }
+            const ajv = new Ajv({ strict: false, allErrors: true });
+            const valid = ajv.validate(schema, candidate);
+            expect(valid, `${name}: ${ajv.errorsText()}`).to.equal(true);
+        }
+        expect(config.items._tcpWarning.closeable).to.equal(false);
+        expect(config.items._controlWarning.closeable).to.equal(false);
 
         expect(ioPackage.common.adminUI).to.deep.equal({ config: 'json' });
         expect(ioPackage.native).to.deep.equal({
@@ -73,11 +98,48 @@ describe('Admin 5 jsonConfig', () => {
         expect(evaluate(serial.validator, { byTCPIP: true, USBDevice: '' })).to.equal(true);
         expect(evaluate(serial.hidden, { byTCPIP: true })).to.equal(true);
 
-        for (const value of ['localhost', '127.0.0.1', 've-direct.local', '::1', '2001:db8::1']) {
-            expect(evaluate(host.validator, { byTCPIP: true, tcpHost: value }), value).to.equal(true);
-        }
-        for (const value of ['', 'host name', 'host/path', 'http://host', 'host:1234', 'host?x=1']) {
-            expect(evaluate(host.validator, { byTCPIP: true, tcpHost: value }), value).to.equal(false);
+        for (const [value, expected] of [
+            ['localhost', true],
+            ['127.0.0.1', true],
+            ['ve-direct.local', true],
+            ['example.com.', true],
+            ['::1', true],
+            ['::', true],
+            ['2001:db8::1', true],
+            ['1:2:3:4:5:6:7:8', true],
+            ['1:2:3:4:5:6:192.0.2.1', true],
+            ['0:0:0:0:0:ffff:192.0.2.1', true],
+            ['::ffff:192.0.2.1', true],
+            ['::ffff:0:192.0.2.1', true],
+            ['fe80::1%lo0', true],
+            ['2001:db8::1%lo0', true],
+            ['::1%42', true],
+            ['1:2:3:4:5:6:7:8%eth0', true],
+            ['', false],
+            ['host name', false],
+            ['host/path', false],
+            ['http://host', false],
+            ['host:1234', false],
+            ['host?x=1', false],
+            [':::', false],
+            ['dead:beef:cafe', false],
+            ['1:2:3:4:5:6:7:8:9', false],
+            ['1:2:3:4:5:192.0.2.1', false],
+            ['1:2:3:4:5:6:7:192.0.2.1', false],
+            ['1::2::3', false],
+            ['::ffff:999.1.1.1', false],
+            ['::ffff:192.168.001.001', false],
+            ['::ffff:192.0.2.01', false],
+            ['192.0.2.1::', false],
+            ['192.0.2.1::%lo0', false],
+            ['fe80:%lo0', false],
+            ['fe80::1%a_b', false],
+            ['fe80::1%-bad', false],
+            ['fe80::1%', false],
+            ['::1%eth%0', false],
+        ]) {
+            expect(evaluate(host.validator, { byTCPIP: true, tcpHost: value }), value).to.equal(expected);
+            expect(runtimeAccepts(value), `runtime parity for ${value}`).to.equal(expected);
         }
         expect(evaluate(host.validator, { byTCPIP: false, tcpHost: '' })).to.equal(true);
         expect(evaluate(host.hidden, { byTCPIP: false })).to.equal(true);
@@ -92,16 +154,57 @@ describe('Admin 5 jsonConfig', () => {
         expect(evaluate(port.hidden, { byTCPIP: false })).to.equal(true);
     });
 
+    it('matches native IPv6 grammar across scoped and embedded IPv4 combinations', () => {
+        const addresses = [
+            '::',
+            '::1',
+            '1::',
+            '1:2:3:4:5:6:7:8',
+            '::ffff:192.0.2.1',
+            '::ffff:0:192.0.2.1',
+            '::192.0.2.1',
+            '1::192.0.2.1',
+            '192.0.2.1::',
+            '1:192.0.2.1::',
+            '1:2:3:4:5:192.0.2.1::',
+            '0:0:0:0:0:ffff:192.0.2.1',
+            '1:2:3:4:5:6:192.0.2.1',
+            '2001:db8::1',
+            'fe80::1',
+            'fe80:',
+            ':::',
+            '1::2::3',
+            'dead:beef:cafe',
+            '1:2:3:4:5:192.0.2.1',
+            '1:2:3:4:5:6:7:192.0.2.1',
+            '::ffff:192.168.001.001',
+            '::ffff:999.1.1.1',
+            '1:2:3:4:5:6:7:8:9',
+            'gg::1',
+        ];
+        const scopes = [undefined, 'lo0', '42', 'a_b', '-bad', ''];
+        for (const address of addresses) {
+            for (const scope of scopes) {
+                const value = scope === undefined ? address : `${address}%${scope}`;
+                const expected = net.isIP(address) === 6 && (scope === undefined || /^[a-z0-9]+$/i.test(scope));
+                expect(evaluate(config.items.tcpHost.validator, { byTCPIP: true, tcpHost: value }), value).to.equal(
+                    expected,
+                );
+                expect(runtimeAccepts(value), `runtime parity for ${value}`).to.equal(expected);
+            }
+        }
+    });
+
     it('gates current controls by opt-in and accepts legacy numeric strings', () => {
         const max = config.items.currentLimitMax;
         const refresh = config.items.currentLimitRefreshSeconds;
-        for (const value of [0, 0.05, -1, Infinity, NaN]) {
+        for (const value of [0, 0.05, -1, 6553.5, 12.30000000001, Infinity, NaN]) {
             expect(
                 evaluate(max.validator, { currentLimitControlEnabled: true, currentLimitMax: value }),
                 String(value),
             ).to.equal(false);
         }
-        for (const value of [0.1, 12.3, 50, '12.3', '50']) {
+        for (const value of [0.1, 12.3, 50, 6553.4, '12.3', '50', '6553.4']) {
             expect(
                 evaluate(max.validator, { currentLimitControlEnabled: true, currentLimitMax: value }),
                 String(value),

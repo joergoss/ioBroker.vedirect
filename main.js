@@ -96,20 +96,26 @@ class Vedirect extends utils.Adapter {
         this.currentLimitControlEnabled = this.config.currentLimitControlEnabled === true;
         this.hexReadEnabled =
             this.config.hexReadEnabled === true || this.chargerControlEnabled || this.currentLimitControlEnabled;
-        this.currentLimitMax = this.nonNegativeConfig(this.config.currentLimitMax, 'currentLimitMax');
-        this.currentLimitRefreshSeconds = this.nonNegativeConfig(
-            this.config.currentLimitRefreshSeconds === undefined ? 20 : this.config.currentLimitRefreshSeconds,
-            'currentLimitRefreshSeconds',
-        );
+        this.currentLimitMax = this.currentLimitControlEnabled
+            ? this.nonNegativeConfig(this.config.currentLimitMax, 'currentLimitMax')
+            : 0;
+        this.currentLimitRefreshSeconds = this.currentLimitControlEnabled
+            ? this.nonNegativeConfig(
+                  this.config.currentLimitRefreshSeconds === undefined ? 20 : this.config.currentLimitRefreshSeconds,
+                  'currentLimitRefreshSeconds',
+              )
+            : 20;
         if (this.currentLimitControlEnabled && this.currentLimitMax <= 0) {
             throw new Error('currentLimitMax must be greater than 0 when current limit control is enabled');
         }
         if (
             this.currentLimitControlEnabled &&
-            (this.currentLimitRefreshSeconds < 5 || this.currentLimitRefreshSeconds > 50)
+            (!Number.isInteger(this.currentLimitRefreshSeconds) ||
+                this.currentLimitRefreshSeconds < 5 ||
+                this.currentLimitRefreshSeconds > 50)
         ) {
             throw new Error(
-                'currentLimitRefreshSeconds must be between 5 and 50 when current limit control is enabled',
+                'currentLimitRefreshSeconds must be an integer between 5 and 50 when current limit control is enabled',
             );
         }
         if (this.currentLimitMax > 0) {
