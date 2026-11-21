@@ -240,12 +240,19 @@ describe('Admin 5 jsonConfig', () => {
                 }
             }
         }
-        const english = JSON.parse(fs.readFileSync('admin/i18n/en/translations.json', 'utf8'));
+        for (const language of ['en', ...languages]) {
+            expect(fs.existsSync(`admin/i18n/${language}.json`), `${language}: short layout`).to.equal(true);
+            expect(
+                fs.existsSync(`admin/i18n/${language}/translations.json`),
+                `${language}: no duplicate long layout`,
+            ).to.equal(false);
+        }
+        const english = JSON.parse(fs.readFileSync('admin/i18n/en.json', 'utf8'));
         for (const key of keys) {
             expect(english[key], `English key ${key}`).to.be.a('string').and.not.equal('');
         }
         for (const language of languages) {
-            const values = JSON.parse(fs.readFileSync(`admin/i18n/${language}/translations.json`, 'utf8'));
+            const values = JSON.parse(fs.readFileSync(`admin/i18n/${language}.json`, 'utf8'));
             for (const key of keys) {
                 expect(values[key], `${language}: ${key}`).to.be.a('string').and.not.equal('');
             }

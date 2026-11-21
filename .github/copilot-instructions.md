@@ -27,7 +27,7 @@ Always reference these instructions first and fallback to search or bash command
 
 ### Build and Release Tasks  
 - `npm run translate` -- Translates admin UI text and io-package metadata to multiple languages
-- Translation catalogs remain in `admin/i18n/<lang>/translations.json` and are consumed directly by Admin 5 jsonConfig
+- Translation catalogs use the preferred short layout `admin/i18n/<lang>.json` and are consumed directly by Admin 5 jsonConfig
 - No compilation step needed - this is pure JavaScript with TypeScript type checking
 
 ## Validation
@@ -116,7 +116,7 @@ Repository Root:
 
 ### Modifying Admin Interface
 - Edit `admin/jsonConfig.json` for UI changes and validate it against the Admin jsonConfig schema
-- Add labels to `admin/i18n/en/translations.json` and the other language catalogs
+- Add labels to `admin/i18n/en.json` and the other language catalogs
 - Test the real Admin interface, including load, conditional fields, validation, save and reload
 
 ### Troubleshooting Connection Issues
