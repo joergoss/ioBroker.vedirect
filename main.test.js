@@ -890,7 +890,11 @@ describe('VE.Direct validated HEX adapter integration', () => {
             { currentLimitMax: 0, currentLimitRefreshSeconds: 20 },
             { currentLimitMax: 50, currentLimitRefreshSeconds: 4 },
             { currentLimitMax: 50, currentLimitRefreshSeconds: 51 },
+            { currentLimitMax: 50, currentLimitRefreshSeconds: 5.5 },
             { currentLimitMax: 0.05, currentLimitRefreshSeconds: 20 },
+            { currentLimitMax: 6553.5, currentLimitRefreshSeconds: 20 },
+            { currentLimitMax: 12.30000000001, currentLimitRefreshSeconds: 20 },
+            { currentLimitMax: 50, currentLimitRefreshSeconds: -1 },
         ]) {
             const adapter = harness();
             adapter.config = {
@@ -904,6 +908,26 @@ describe('VE.Direct validated HEX adapter integration', () => {
             await expect(adapter.onReady()).to.be.rejected;
             expect(adapter.watchDogInterval).to.equal(undefined);
         }
+    });
+
+    it('keeps disabled current settings inert instead of rejecting startup', async () => {
+        const adapter = harness();
+        adapter.config = {
+            USBDevice: '/dev/fake',
+            expireTime: 0,
+            messageBuffer: 0,
+            currentLimitControlEnabled: false,
+            currentLimitMax: 0.05,
+            currentLimitRefreshSeconds: -1,
+        };
+        adapter.initConnectionObject = sinon.stub().resolves();
+        await adapter.onReady();
+        clearInterval(adapter.watchDogInterval);
+        adapter.watchDogInterval = undefined;
+        await adapter.activeWatchDog;
+        expect(adapter.currentLimitMax).to.equal(0);
+        expect(adapter.currentLimitRefreshSeconds).to.equal(20);
+        expect(adapter.log.error.called).to.equal(false);
     });
 
     it('requires external-control capability before any current-limit Set', async () => {

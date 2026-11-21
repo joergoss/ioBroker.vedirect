@@ -46,6 +46,7 @@
     "@tsconfig/node22": "^22.0.2",
     "@types/node": "^22.20.5",
     "ioredis": "^6.0.0",
+    "playwright-core": "^1.65.1",
     "proxyquire": "^2.1.3",
     "typescript": "~5.9.3"
   },
@@ -63,6 +64,10 @@
     "test:js": "node node_modules/@iobroker/testing/node_modules/mocha/bin/mocha.js",
     "test:package": "node node_modules/@iobroker/testing/node_modules/mocha/bin/mocha.js test/package --exit",
     "test:integration": "node node_modules/@iobroker/testing/node_modules/mocha/bin/mocha.js test/integration --exit",
+    "test:admin:setup": "npx --yes --package=@iobroker/dev-server dev-server setup --adminPort 8081 --admin 7.6.20 --jsController 6.0.11 --symlinks",
+    "test:admin:upload": "npx --yes --package=@iobroker/dev-server dev-server upload",
+    "test:admin": "npm run test:admin:setup && npm run test:admin:upload && node test/admin-e2e/run.js",
+    "dev-server": "npx --yes --package=@iobroker/dev-server dev-server",
     "test": "npm run test:js && npm run test:package",
     "test:all": "npm test && npm run check && npm run lint && npm run test:integration",
     "check": "tsc --noEmit",

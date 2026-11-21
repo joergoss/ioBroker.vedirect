@@ -23,10 +23,11 @@ Always reference these instructions first and fallback to search or bash command
 - `npm run test:js` -- Runs the mocha suites (`*.test.js`)
 - `npm run test:package` -- Package validation
 - `npm run test:integration` -- NEVER CANCEL: Full integration test that starts adapter in test environment (takes 26-47 seconds)
+- `npm run test:admin` -- Real Admin 5 browser E2E with conditional fields, validation, save/reload and native persistence
 
 ### Build and Release Tasks  
 - `npm run translate` -- Translates admin UI text and io-package metadata to multiple languages
-- `npx translate-adapter to-words` -- Regenerates `admin/words.js` from the i18n catalogs
+- Translation catalogs remain in `admin/i18n/<lang>/translations.json` and are consumed directly by Admin 5 jsonConfig
 - No compilation step needed - this is pure JavaScript with TypeScript type checking
 
 ## Validation
@@ -60,8 +61,8 @@ Always reference these instructions first and fallback to search or bash command
 - `lib/stateAttr.js`, `lib/ProductNames.js`, `lib/DeviceModes.js`, `lib/ErrorNames.js`, etc. -- Protocol lookup tables
 
 ### Configuration and Admin
-- `admin/index_m.html` -- Admin web interface for adapter configuration
-- `admin/words.js` -- Generated multi-language text definitions for admin UI
+- `admin/jsonConfig.json` -- Admin 5 configuration form, conditional fields and native save validation
+- `admin/i18n/` -- Multi-language translation catalogs for the configuration form
 - `io-package.json` -- ioBroker-specific adapter metadata and configuration
 - `package.json` -- Standard Node.js package definition
 
@@ -84,8 +85,7 @@ Repository Root:
 ├── eslint.config.mjs         # ESLint configuration
 ├── *.test.js                 # Mocha adapter/parser suites
 ├── admin/                    # Admin UI files
-│   ├── index_m.html         # Main admin interface
-│   ├── words.js             # Generated multi-language translations
+│   ├── jsonConfig.json      # Admin 5 configuration form
 │   └── i18n/                # Translation source files
 ├── lib/                      # Protocol and device definitions  
 │   ├── veDirectCom.js        # Serial port lifecycle
@@ -115,9 +115,9 @@ Repository Root:
 - Test with actual hardware if possible
 
 ### Modifying Admin Interface
-- Edit `admin/index_m.html` for UI changes
-- Add labels to `admin/i18n/en/translations.json`, run `npm run translate` for the other languages, then `npx translate-adapter to-words` to regenerate `admin/words.js`
-- Test admin interface in ioBroker environment
+- Edit `admin/jsonConfig.json` for UI changes and validate it against the Admin jsonConfig schema
+- Add labels to `admin/i18n/en/translations.json` and the other language catalogs
+- Test the real Admin interface, including load, conditional fields, validation, save and reload
 
 ### Troubleshooting Connection Issues
 - Verify USB device path in adapter configuration (typically `/dev/ttyUSB0` on Linux)

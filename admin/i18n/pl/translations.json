@@ -14,5 +14,10 @@
     "Use a raw TCP serial server instead of a local serial port": "Użyj serwera szeregowego Raw TCP zamiast lokalnego portu szeregowego",
     "Raw TCP serial server hostname or IP address": "Nazwa hosta lub adres IP serwera szeregowego Raw TCP",
     "Raw TCP serial server port": "Port serwera szeregowego Raw TCP",
-    "Raw TCP is unencrypted and unauthenticated. Use only a trusted network. Telnet and RFC2217 negotiation are not supported.": "Raw TCP nie zapewnia szyfrowania ani uwierzytelniania. Używaj go wyłącznie w zaufanej sieci. Negocjacje Telnet i RFC2217 nie są obsługiwane."
+    "Raw TCP is unencrypted and unauthenticated. Use only a trusted network. Telnet and RFC2217 negotiation are not supported.": "Raw TCP nie zapewnia szyfrowania ani uwierzytelniania. Używaj go wyłącznie w zaufanej sieci. Negocjacje Telnet i RFC2217 nie są obsługiwane.",
+    "Enter a valid VE.Direct serial port": "Wprowadź prawidłowy port szeregowy VE.Direct",
+    "Enter a valid TCP hostname or IP address": "Wprowadź prawidłową nazwę hosta lub prawidłowy adres IP dla połączenia TCP",
+    "TCP port must be an integer between 1 and 65535": "Port TCP musi być liczbą całkowitą z zakresu od 1 do 65535",
+    "Enter a positive current in exact 0.1 A steps": "Wprowadź dodatnią wartość prądu z dokładnym krokiem 0,1 A",
+    "Enter an integer from 5 to 50 seconds": "Wprowadź całkowitą liczbę sekund od 5 do 50"
 }

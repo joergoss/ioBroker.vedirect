@@ -14,5 +14,10 @@
     "Use a raw TCP serial server instead of a local serial port": "Gebruik een seriële Raw TCP-server in plaats van een lokale seriële poort",
     "Raw TCP serial server hostname or IP address": "Hostnaam of IP-adres van de seriële Raw TCP-server",
     "Raw TCP serial server port": "Poort van de seriële Raw TCP-server",
-    "Raw TCP is unencrypted and unauthenticated. Use only a trusted network. Telnet and RFC2217 negotiation are not supported.": "Raw TCP biedt geen versleuteling of authenticatie. Gebruik Raw TCP alleen in een vertrouwd netwerk. Telnet- en RFC2217-onderhandeling worden niet ondersteund."
+    "Raw TCP is unencrypted and unauthenticated. Use only a trusted network. Telnet and RFC2217 negotiation are not supported.": "Raw TCP biedt geen versleuteling of authenticatie. Gebruik Raw TCP alleen in een vertrouwd netwerk. Telnet- en RFC2217-onderhandeling worden niet ondersteund.",
+    "Enter a valid VE.Direct serial port": "Voer een geldige seriële VE.Direct-poort in",
+    "Enter a valid TCP hostname or IP address": "Voer een geldige hostnaam of een geldig IP-adres voor de TCP-verbinding in",
+    "TCP port must be an integer between 1 and 65535": "De TCP-poort moet een geheel getal tussen 1 en 65535 zijn",
+    "Enter a positive current in exact 0.1 A steps": "Voer een positieve stroom in exacte stappen van 0,1 A in",
+    "Enter an integer from 5 to 50 seconds": "Voer een geheel aantal seconden tussen 5 en 50 in"
 }
