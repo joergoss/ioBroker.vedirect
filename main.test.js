@@ -102,6 +102,15 @@ function flush() {
     return new Promise(resolve => setImmediate(resolve));
 }
 
+function publishedStateValues(adapter) {
+    return Object.fromEntries(
+        [...adapter.setStateAsync.getCalls(), ...adapter.setStateChangedAsync.getCalls()].map(call => [
+            call.args[0],
+            call.args[1].val,
+        ]),
+    );
+}
+
 describe('VE.Direct adapter state handling', () => {
     it('creates and migrates objects before publishing values', async () => {
         const adapter = harness();
@@ -284,9 +293,7 @@ describe('VE.Direct read-only runtime diagnostics', () => {
         }
         adapter.configureConnectionTarget();
         await adapter.initializeDiagnostics();
-        const values = Object.fromEntries(
-            adapter.setStateChangedAsync.getCalls().map(call => [call.args[0], call.args[1].val]),
-        );
+        const values = publishedStateValues(adapter);
         expect(values).to.include({
             'info.transport': 'serial',
             'info.lastValidFrameAt': 0,
@@ -310,7 +317,7 @@ describe('VE.Direct read-only runtime diagnostics', () => {
         };
         adapter.configureConnectionTarget();
         await adapter.initializeDiagnostics();
-        const calls = adapter.setStateChangedAsync.getCalls();
+        const calls = [...adapter.setStateAsync.getCalls(), ...adapter.setStateChangedAsync.getCalls()];
         expect(calls.find(call => call.args[0] === 'info.transport').args[1].val).to.equal('tcp');
         for (const call of calls) {
             expect(String(call.args[1].val)).not.to.include('secret.example');
@@ -363,7 +370,7 @@ describe('VE.Direct read-only runtime diagnostics', () => {
                 .getCalls()
                 .filter(call => call.args[0] === 'info.lastValidFrameAt')
                 .map(call => call.args[1].val);
-            expect(values).to.deep.equal([0, 100000, 130000, 131000]);
+            expect(values).to.deep.equal([100000, 130000, 131000]);
         } finally {
             clock.restore();
         }
@@ -394,8 +401,8 @@ describe('VE.Direct read-only runtime diagnostics', () => {
             .getCalls()
             .filter(call => call.args[0] === 'info.parserErrors')
             .map(call => call.args[1].val);
-        expect(checksumValues).to.deep.equal([0, 1]);
-        expect(parserValues).to.deep.equal([0, 1, 2]);
+        expect(checksumValues).to.deep.equal([1]);
+        expect(parserValues).to.deep.equal([1, 2]);
         expect(adapter.lastValidFrameAt).to.equal(0);
         await adapter.com.close();
     });
@@ -493,9 +500,7 @@ describe('VE.Direct read-only runtime diagnostics', () => {
                 clearInterval(adapter.watchDogInterval);
                 adapter.watchDogInterval = undefined;
             }
-            const values = Object.fromEntries(
-                adapter.setStateChangedAsync.getCalls().map(call => [call.args[0], call.args[1].val]),
-            );
+            const values = publishedStateValues(adapter);
             expect(values).to.include({
                 'info.transport': transport,
                 'info.lastValidFrameAt': 0,
@@ -679,7 +684,7 @@ describe('VE.Direct read-only runtime diagnostics', () => {
             .getCalls()
             .filter(call => call.args[0] === 'info.lastTransportError')
             .map(call => call.args[1].val);
-        expect(values).to.deep.equal(['', 'ECONNRESET']);
+        expect(values).to.deep.equal(['ECONNRESET']);
     });
 });
 

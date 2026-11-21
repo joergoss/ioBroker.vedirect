@@ -23,7 +23,7 @@ Zähler und Fehler sind Laufzeitdiagnostik, keine persistenten Statistiken: Sie 
 
 ## Schreibfrequenz
 
-- Beim Start werden Transport und definierte Anfangswerte einmalig veröffentlicht.
+- Beim Start werden Transport und definierte Anfangswerte einmalig mit `setStateAsync` adapterbestätigt (`ack: true`, `q: 0`) veröffentlicht, damit auch ein mit dem Default identischer Reset nachweislich vom Adapter stammt.
 - Danach werden ausschließlich geänderte Werte geschrieben. Eine instanzgebundene Latest-Value-Queue begrenzt jeden Diagnosestate auf höchstens einen aktiven Schreibvorgang und genau einen nachgezogenen neuen Wert. Langsame Datenbanken erzeugen daher auch bei Parser- oder Timestamp-Fehlerfluten keine unbegrenzten Promise-Backlogs.
 - Der erste gültige Frame wird sofort mit seinem Zeitstempel veröffentlicht. Weitere Framezeitstempel werden höchstens alle **30 Sekunden** geschrieben, gemessen ab dem letzten tatsächlich erfolgreichen Schreibvorgang und nicht erst nach einem vollständig abgeschlossenen Drain; die bestehende sekundengenaue Liveness- und Reconnect-Logik verwendet weiterhin den ungedrosselten Speicherwert. Während eines langsamen Schreibvorgangs wird nur der neueste Folgezeitstempel vorgehalten, nicht jeder Zwischenwert.
 - Bei Disconnect und Unload wird ein noch nicht veröffentlichter neuerer Framezeitstempel einmalig übernommen. Wiederholte Disconnects ohne neueren Frame erzeugen keinen Diagnosewrite. Der Flush wird nicht im Watchdog-Kritikpfad abgewartet und verändert nicht die Reihenfolge der `info.connection`-Transitionen. Nach einem Schreibfehler kann derselbe Zeitstempel erneut versucht werden; erst ein erfolgreicher Schreibvorgang gilt als bestätigt.

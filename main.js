@@ -262,22 +262,23 @@ class Vedirect extends utils.Adapter {
             ['info.lastTransportError', this.lastTransportError],
         ];
         for (const [id, value] of values) {
-            await this.writeDiagnosticState(id, value);
+            await this.writeDiagnosticState(id, value, true);
         }
     }
 
-    writeDiagnosticState(id, value) {
+    writeDiagnosticState(id, value, force = false) {
         let entry = this.diagnosticEntries.get(id);
         if (!entry) {
-            entry = { latest: undefined, version: 0, dirty: false, drain: undefined };
+            entry = { latest: undefined, version: 0, dirty: false, force: false, drain: undefined };
             this.diagnosticEntries.set(id, entry);
         }
-        if (entry.latest === value && (entry.dirty || this.diagnosticPublishedValues.get(id) === value)) {
+        if (!force && entry.latest === value && (entry.dirty || this.diagnosticPublishedValues.get(id) === value)) {
             return entry.drain || Promise.resolve(true);
         }
         entry.latest = value;
         entry.version = ++this.diagnosticOperationSequence;
         entry.dirty = true;
+        entry.force = force;
         this.diagnosticValues.set(id, value);
         if (!entry.drain) {
             const operation = this.drainDiagnosticState(id, entry);
@@ -300,9 +301,10 @@ class Vedirect extends utils.Adapter {
         while (entry.dirty) {
             const version = entry.version;
             const value = entry.latest;
+            const force = entry.force;
             let succeeded;
             try {
-                await this.writeState(id, value, {});
+                await this.writeState(id, value, force ? undefined : {});
                 succeeded = true;
                 this.diagnosticPublishedValues.set(id, value);
             } catch (error) {
@@ -313,6 +315,7 @@ class Vedirect extends utils.Adapter {
             }
             if (entry.version === version) {
                 entry.dirty = false;
+                entry.force = false;
                 latestSucceeded = succeeded;
                 if (!succeeded) {
                     this.diagnosticValues.delete(id);
