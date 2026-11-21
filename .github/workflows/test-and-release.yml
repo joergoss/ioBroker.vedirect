@@ -62,5 +62,19 @@ jobs:
             - run: npm ci
             - run: npm run test:admin
 
+    soak-short:
+        needs: [check-and-lint]
+        if: contains(github.event.head_commit.message, '[skip ci]') == false
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: '24.x'
+                  cache: 'npm'
+            - run: npm ci
+            - run: npm run test:soak
+
 # Dieser Fork veröffentlicht derzeit nicht auf NPM. Releases werden nach
 # erfolgreicher CI als Git-Tag und GitHub-Release erzeugt.
