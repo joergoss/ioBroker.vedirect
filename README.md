@@ -23,6 +23,7 @@ This adapter uses Sentry libraries to automatically report exceptions and code e
 - PTY/socat endpoints without a modem-control ioctl are accepted; other set errors remain fatal open errors.
 - `info.connection` is based exclusively on fresh, valid blocks.
 - Read-only runtime diagnostics for transport, throttled last-valid-frame time, successful reconnects, parser errors, and sanitized transport errors; see [docs/runtime-diagnostics.md](docs/runtime-diagnostics.md).
+- Reproducible short and optional long TCP reconnect/resource soak measurements with zero client-byte verification; see [docs/soak.md](docs/soak.md).
 - Object migration before state writes and handled promise errors.
 - Frame sampling without losing individual protocol fields.
 - Multiple instances without global ports, parsers, timers, or buffers.
