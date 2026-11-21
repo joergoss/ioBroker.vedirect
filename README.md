@@ -22,6 +22,7 @@ This adapter uses Sentry libraries to automatically report exceptions and code e
 - Admin 5 `jsonConfig` UI with conditional serial/TCP fields, native save validation, and real-browser persistence tests.
 - PTY/socat endpoints without a modem-control ioctl are accepted; other set errors remain fatal open errors.
 - `info.connection` is based exclusively on fresh, valid blocks.
+- Read-only runtime diagnostics for transport, throttled last-valid-frame time, successful reconnects, parser errors, and sanitized transport errors; see [docs/runtime-diagnostics.md](docs/runtime-diagnostics.md).
 - Object migration before state writes and handled promise errors.
 - Frame sampling without losing individual protocol fields.
 - Multiple instances without global ports, parsers, timers, or buffers.

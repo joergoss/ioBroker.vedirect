@@ -695,4 +695,28 @@ describe('VE.Direct byte parser', () => {
             },
         ]);
     });
+
+    it('reports cumulative checksum, parser and HEX rejection counters at their real events', () => {
+        const parser = new VeDirectParser();
+        const events = [];
+        parser.onFrameError = counters => events.push(counters);
+
+        const corrupted = makeFrame([['V', '13118']]);
+        corrupted[5] ^= 1;
+        parser.receive(corrupted);
+        expect(events.at(-1)).to.deep.equal({ checksumErrors: 1, invalidFrames: 0, invalidHexMessages: 0 });
+
+        parser.reset();
+        parser.receive(makeFrame([['V', 'not-a-number']]));
+        expect(events.at(-1)).to.deep.equal({ checksumErrors: 1, invalidFrames: 1, invalidHexMessages: 0 });
+
+        parser.receive(Buffer.from(`:7${'0'.repeat(300)}\n`, 'ascii'));
+        expect(events.at(-1)).to.deep.equal({ checksumErrors: 1, invalidFrames: 1, invalidHexMessages: 1 });
+        expect(events).to.have.lengthOf(3);
+
+        parser.reset();
+        expect(parser.checksumErrors).to.equal(1);
+        expect(parser.invalidFrames).to.equal(1);
+        expect(parser.invalidHexMessages).to.equal(1);
+    });
 });

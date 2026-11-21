@@ -564,6 +564,8 @@ describe('VeDirectCom serial lifecycle', () => {
             },
             { openTimeoutMs: 20, closeTimeoutMs: 20 },
         );
+        const closeErrors = [];
+        com.onPortClosed = error => closeErrors.push(error);
         await com.open('slow-close');
         const realClose = port.close.bind(port);
         port.close = () => undefined;
@@ -577,6 +579,7 @@ describe('VeDirectCom serial lifecycle', () => {
         port.close = realClose;
         await com.close();
         expect(com.isOpen()).to.equal(false);
+        expect(closeErrors).to.deep.equal([undefined]);
     });
 
     it('keeps an outstanding native close retryable instead of replacing the port', async () => {
@@ -972,7 +975,43 @@ describe('VeDirectCom serial lifecycle', () => {
         port.emit('close');
         expect(com.sessionId).to.be.greaterThan(previousSession);
         expect(closeErrors).to.have.lengthOf(1);
+        expect(closeErrors[0].message).to.equal('Serial port closed unexpectedly');
         await expect(com.writeAndDrain(Buffer.from(':A\n'))).to.be.rejectedWith('not ready');
+    });
+
+    it('reports no transport error for an intentional close', async () => {
+        const port = new FakeSerialPort();
+        const com = new VeDirectCom((_path, _options, callback) => {
+            process.nextTick(() => {
+                port.isOpen = true;
+                callback();
+            });
+            return port;
+        });
+        const closeErrors = [];
+        com.onPortClosed = error => closeErrors.push(error);
+        await com.open('fake');
+        await com.close();
+        expect(closeErrors).to.deep.equal([undefined]);
+    });
+
+    it('preserves a real socket error through its subsequent unexpected close', async () => {
+        const port = new FakeSerialPort();
+        const com = new VeDirectCom((_path, _options, callback) => {
+            process.nextTick(() => {
+                port.isOpen = true;
+                callback();
+            });
+            return port;
+        });
+        const closeErrors = [];
+        com.onPortClosed = error => closeErrors.push(error);
+        await com.open('fake');
+        const socketError = Object.assign(new Error('socket reset'), { code: 'ECONNRESET' });
+        port.emit('error', socketError);
+        port.isOpen = false;
+        port.emit('close');
+        expect(closeErrors).to.deep.equal([socketError]);
     });
 
     for (const error of [
