@@ -4,7 +4,7 @@ Stand: 2026-11-21, Entwicklungsbranch `feat/admin5-jsonconfig`.
 
 ## Migration
 
-Die bisherige Materialize-/jQuery-Konfiguration wurde vollständig durch `admin/jsonConfig.json` ersetzt. `common.adminUI.config` ist `json`. Die alten Dateien `index_m.html`, `style.css`, `words.js`, `admin.d.ts` und `tsconfig.json` werden nicht mehr benötigt. Die Übersetzungen bleiben im bestehenden Format `admin/i18n/<lang>/translations.json` und werden direkt von Admin 5 gelesen.
+Die bisherige Materialize-/jQuery-Konfiguration wurde vollständig durch `admin/jsonConfig.json` ersetzt. `common.adminUI.config` ist `json`. Die alten Dateien `index_m.html`, `style.css`, `words.js`, `admin.d.ts` und `tsconfig.json` werden nicht mehr benötigt. Die Übersetzungen verwenden das bevorzugte Kurzformat `admin/i18n/<lang>.json` und werden direkt von Admin 5 gelesen. Die Konvertierung aus dem langen Format erfolgte mit `npm run translate convert`; alle elf Kataloge blieben als JSON-Werte nachweislich unverändert.
 
 Alle bisherigen Config-Keys und Defaults bleiben unverändert, einschließlich des legacy Schlüssels `byUSB`. Display-only-Einträge beginnen mit `_` und werden nicht in `native` gespeichert.
 
