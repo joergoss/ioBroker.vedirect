@@ -102,6 +102,15 @@ function flush() {
     return new Promise(resolve => setImmediate(resolve));
 }
 
+function publishedStateValues(adapter) {
+    return Object.fromEntries(
+        [...adapter.setStateAsync.getCalls(), ...adapter.setStateChangedAsync.getCalls()].map(call => [
+            call.args[0],
+            call.args[1].val,
+        ]),
+    );
+}
+
 describe('VE.Direct adapter state handling', () => {
     it('creates and migrates objects before publishing values', async () => {
         const adapter = harness();
@@ -262,6 +271,420 @@ describe('VE.Direct adapter state handling', () => {
             read: true,
             write: false,
         });
+    });
+});
+
+describe('VE.Direct read-only runtime diagnostics', () => {
+    it('migrates all diagnostic objects read-only and initializes serial defaults', async () => {
+        const adapter = harness();
+        await adapter.initConnectionObject();
+        const commons = new Map(
+            adapter.extendObjectAsync
+                .getCalls()
+                .filter(call => call.args[0].startsWith('info.') && call.args[0] !== 'info.connection')
+                .map(call => [call.args[0], call.args[1].common]),
+        );
+        expect(commons.size).to.equal(6);
+        for (const [id, common] of commons) {
+            expect(common, id).to.include({ read: true, write: false });
+            expect(common.name.en).to.be.a('string').and.not.equal('');
+            expect(common.name.de).to.be.a('string').and.not.equal('');
+            expect(common.name['zh-cn']).to.be.a('string').and.not.equal('');
+        }
+        adapter.configureConnectionTarget();
+        await adapter.initializeDiagnostics();
+        const values = publishedStateValues(adapter);
+        expect(values).to.include({
+            'info.transport': 'serial',
+            'info.lastValidFrameAt': 0,
+            'info.reconnectCount': 0,
+            'info.checksumErrors': 0,
+            'info.parserErrors': 0,
+            'info.lastTransportError': '',
+        });
+        expect(commons.get('info.lastValidFrameAt')).to.include({ role: 'value.time', unit: 'ms', min: 0 });
+    });
+
+    it('initializes TCP diagnostics without publishing the network target', async () => {
+        const adapter = harness();
+        adapter.config = {
+            byTCPIP: true,
+            tcpHost: 'secret.example',
+            tcpPort: 1234,
+            USBDevice: '',
+            expireTime: 0,
+            messageBuffer: 0,
+        };
+        adapter.configureConnectionTarget();
+        await adapter.initializeDiagnostics();
+        const calls = [...adapter.setStateAsync.getCalls(), ...adapter.setStateChangedAsync.getCalls()];
+        expect(calls.find(call => call.args[0] === 'info.transport').args[1].val).to.equal('tcp');
+        for (const call of calls) {
+            expect(String(call.args[1].val)).not.to.include('secret.example');
+            expect(String(call.args[1].val)).not.to.include('1234');
+        }
+    });
+
+    it('counts only successful opens after the initial transport open', async () => {
+        const adapter = harness();
+        for (let index = 0; index < 2; index++) {
+            adapter.lastOpenAttempt = 0;
+            await adapter.watchDog();
+        }
+        expect(adapter.successfulOpenCount).to.equal(2);
+        expect(adapter.reconnectCount).to.equal(1);
+        await flush();
+        expect(adapter.setStateChangedAsync.calledWith('info.reconnectCount', { val: 1, ack: true })).to.equal(true);
+
+        adapter.com.open.rejects(new Error('offline'));
+        adapter.lastOpenAttempt = 0;
+        await adapter.watchDog();
+        expect(adapter.successfulOpenCount).to.equal(2);
+        expect(adapter.reconnectCount).to.equal(1);
+    });
+
+    it('publishes valid-frame time at most every 30 seconds and flushes a newer value on disconnect', async () => {
+        const clock = sinon.useFakeTimers({ now: 100000, toFake: ['Date'] });
+        try {
+            const adapter = harness();
+            adapter.initConnectionObject = sinon.stub().resolves();
+            adapter.watchDog = sinon.stub().resolves();
+            await adapter.onReady();
+            clearInterval(adapter.watchDogInterval);
+            adapter.watchDogInterval = undefined;
+
+            adapter.com.onValidFrame();
+            await flush();
+            for (let index = 0; index < 20; index++) {
+                adapter.com.onValidFrame();
+            }
+            await flush();
+            await clock.tickAsync(30000);
+            adapter.com.onValidFrame();
+            await flush();
+            await clock.tickAsync(1000);
+            adapter.com.onValidFrame();
+            await flush();
+            await adapter.safeSetConnectionState(false);
+            const values = adapter.setStateChangedAsync
+                .getCalls()
+                .filter(call => call.args[0] === 'info.lastValidFrameAt')
+                .map(call => call.args[1].val);
+            expect(values).to.deep.equal([100000, 130000, 131000]);
+        } finally {
+            clock.restore();
+        }
+    });
+
+    it('publishes cumulative parser counters only when real parser errors occur', async () => {
+        const { adapter, ports } = serialHarness();
+        await adapter.onReady();
+        clearInterval(adapter.watchDogInterval);
+        adapter.watchDogInterval = undefined;
+        await adapter.activeWatchDog;
+        expect(ports).to.have.lengthOf(1);
+
+        const corrupted = makeFrame([['V', '13290']]);
+        corrupted[5] ^= 1;
+        ports[0].emit('data', corrupted);
+        await flush();
+        ports[0].emit('data', makeFrame([['V', 'not-a-number']]));
+        await flush();
+        ports[0].emit('data', Buffer.from(`:7${'0'.repeat(300)}\n`, 'ascii'));
+        await flush();
+
+        const checksumValues = adapter.setStateChangedAsync
+            .getCalls()
+            .filter(call => call.args[0] === 'info.checksumErrors')
+            .map(call => call.args[1].val);
+        const parserValues = adapter.setStateChangedAsync
+            .getCalls()
+            .filter(call => call.args[0] === 'info.parserErrors')
+            .map(call => call.args[1].val);
+        expect(checksumValues).to.deep.equal([1]);
+        expect(parserValues).to.deep.equal([1, 2]);
+        expect(adapter.lastValidFrameAt).to.equal(0);
+        await adapter.com.close();
+    });
+
+    it('stores only sanitized transport errors and retains the last real error after recovery', async () => {
+        const adapter = harness();
+        adapter.config.tcpHost = 'secret.example';
+        adapter.serialPortPath = '/dev/ttyUSB-secret';
+        const refused = Object.assign(new Error('connect ECONNREFUSED 127.0.0.1:1234'), { code: 'ECONNREFUSED' });
+        expect(adapter.sanitizeTransportError(refused)).to.equal('ECONNREFUSED');
+        expect(adapter.sanitizeTransportError(new Error('open /dev/ttyUSB-secret failed'))).to.equal(
+            'open <target> failed',
+        );
+        expect(adapter.sanitizeTransportError(new Error('DNS secret.example failed'))).to.equal('DNS <target> failed');
+        expect(adapter.sanitizeTransportError(new Error('route 2001:db8::1%lo0 failed'))).to.equal(
+            'route <address> failed',
+        );
+        await adapter.recordTransportError(refused);
+        await adapter.recordTransportOpen();
+        expect(adapter.lastTransportError).to.equal('ECONNREFUSED');
+        const call = adapter.setStateChangedAsync
+            .getCalls()
+            .find(candidate => candidate.args[0] === 'info.lastTransportError');
+        expect(call.args[1]).to.deep.equal({ val: 'ECONNREFUSED', ack: true });
+        expect(JSON.stringify(call.args[1])).not.to.include('127.0.0.1');
+    });
+
+    it('keeps counters and diagnostics independent between two instances', async () => {
+        const first = harness();
+        const second = harness();
+        await first.recordTransportOpen();
+        await first.recordTransportOpen();
+        await second.recordTransportOpen();
+        await first.recordParserError({ checksumErrors: 2, invalidFrames: 3, invalidHexMessages: 1 });
+        expect(first.reconnectCount).to.equal(1);
+        expect(second.reconnectCount).to.equal(0);
+        expect(first.setStateChangedAsync.calledWith('info.checksumErrors', { val: 2, ack: true })).to.equal(true);
+        expect(first.setStateChangedAsync.calledWith('info.parserErrors', { val: 4, ack: true })).to.equal(true);
+        expect(second.setStateChangedAsync.calledWith('info.checksumErrors')).to.equal(false);
+        expect(second.setStateChangedAsync.calledWith('info.parserErrors')).to.equal(false);
+    });
+
+    it('keeps connection transitions ordered and watchdog progress when timestamp writes hang', async () => {
+        const adapter = harness();
+        let releaseTimestamp;
+        const pendingTimestamp = new Promise(resolve => (releaseTimestamp = resolve));
+        adapter.setStateChangedAsync.withArgs('info.lastValidFrameAt').returns(pendingTimestamp);
+        adapter.lastValidFrameAt = 1000;
+        await adapter.safeSetConnectionState(true);
+        await adapter.safeSetConnectionState(false);
+
+        adapter.lastValidFrameAt = 2000;
+        await adapter.safeSetConnectionState(true);
+        expect(adapter.connectionRequested).to.equal(true);
+        expect(adapter.connectionState).to.equal(true);
+        const connectionValues = adapter.setStateAsync
+            .getCalls()
+            .filter(call => call.args[0] === 'info.connection')
+            .map(call => call.args[1].val);
+        expect(connectionValues.slice(0, 3)).to.deep.equal([true, false, true]);
+
+        adapter.lastFrameTime = 0;
+        adapter.lastValidFrameAt = 3000;
+        adapter.com.isOpen.returns(true);
+        adapter.lastOpenAttempt = 0;
+        await adapter.watchDog();
+        expect(adapter.com.close.called).to.equal(true);
+        expect(adapter.com.open.called).to.equal(true);
+        releaseTimestamp();
+        await flush();
+        await Promise.all([...adapter.stateQueues.values()]);
+    });
+
+    for (const [name, config, transport] of [
+        ['an empty serial target', { USBDevice: '', expireTime: 0, messageBuffer: 0 }, 'serial'],
+        [
+            'an invalid TCP target',
+            { byTCPIP: true, tcpHost: 'http://127.0.0.1', tcpPort: 1234, expireTime: 0, messageBuffer: 0 },
+            'tcp',
+        ],
+    ]) {
+        it(`resets all diagnostics before rejecting ${name}`, async () => {
+            const adapter = harness();
+            adapter.config = config;
+            adapter.lastValidFrameAt = 123;
+            adapter.lastValidFramePublishedAt = 123;
+            adapter.lastValidFramePublishOperation = 123;
+            adapter.successfulOpenCount = 4;
+            adapter.reconnectCount = 3;
+            adapter.lastTransportError = 'old error';
+            adapter.diagnosticValues.set('info.reconnectCount', 99);
+            adapter.handleReady();
+            await adapter.readyPromise;
+            if (adapter.watchDogInterval) {
+                clearInterval(adapter.watchDogInterval);
+                adapter.watchDogInterval = undefined;
+            }
+            const values = publishedStateValues(adapter);
+            expect(values).to.include({
+                'info.transport': transport,
+                'info.lastValidFrameAt': 0,
+                'info.reconnectCount': 0,
+                'info.checksumErrors': 0,
+                'info.parserErrors': 0,
+                'info.lastTransportError': '',
+            });
+            expect(adapter.lastValidFrameAt).to.equal(0);
+            expect(adapter.reconnectCount).to.equal(0);
+            expect(adapter.lastTransportError).to.equal('');
+            expect(adapter.watchDogInterval).to.equal(undefined);
+        });
+    }
+
+    it('retries a failed timestamp publication with the same forced-flush timestamp', async () => {
+        const adapter = harness();
+        adapter.setStateChangedAsync.withArgs('info.lastValidFrameAt').onFirstCall().rejects(new Error('db down'));
+        adapter.lastValidFrameAt = 1000;
+        await adapter.publishLastValidFrame(true);
+        expect(adapter.lastValidFramePublishedAt).to.equal(0);
+        expect(adapter.lastValidFramePublishOperation).to.equal(0);
+        expect(adapter.diagnosticValues.has('info.lastValidFrameAt')).to.equal(false);
+
+        await adapter.publishLastValidFrame(true);
+        expect(adapter.lastValidFramePublishedAt).to.equal(1000);
+        expect(adapter.diagnosticValues.get('info.lastValidFrameAt')).to.equal(1000);
+        expect(adapter.setStateChangedAsync.withArgs('info.lastValidFrameAt').callCount).to.equal(2);
+    });
+
+    it('keeps the latest diagnostic value after an older A-B-A operation fails', async () => {
+        const adapter = harness();
+        let rejectFirst;
+        let resolveSecond;
+        let resolveThird;
+        adapter.setStateChangedAsync.onCall(0).returns(new Promise((_, reject) => (rejectFirst = reject)));
+        adapter.setStateChangedAsync.onCall(1).returns(new Promise(resolve => (resolveSecond = resolve)));
+        adapter.setStateChangedAsync.onCall(2).returns(new Promise(resolve => (resolveThird = resolve)));
+        const first = adapter.writeDiagnosticState('info.parserErrors', 'A');
+        const second = adapter.writeDiagnosticState('info.parserErrors', 'B');
+        const third = adapter.writeDiagnosticState('info.parserErrors', 'A');
+        rejectFirst(new Error('first write failed'));
+        await flush();
+        resolveSecond();
+        await flush();
+        resolveThird();
+        expect(await Promise.all([first, second, third])).to.deep.equal([true, true, true]);
+        expect(adapter.diagnosticValues.get('info.parserErrors')).to.equal('A');
+        await adapter.writeDiagnosticState('info.parserErrors', 'A');
+        expect(adapter.setStateChangedAsync.callCount).to.equal(2);
+    });
+
+    it('masks compressed, scoped and bracketed addresses plus mixed-case hostnames conservatively', () => {
+        const adapter = harness();
+        adapter.config.tcpHost = 'Secret.Example.';
+        adapter.serialPortPath = '/dev/ttyUSB0';
+        adapter.config.USBDevice = '/dev/ttyUSB0';
+        for (const [message, expected] of [
+            ['route ::1 failed', 'route <address> failed'],
+            ['route fe80::1%lo0 failed', 'route <address> failed'],
+            ['route [fe80::1%lo0]:1234 failed', 'route <address> failed'],
+            ['route 192.0.2.1:1234 failed', 'route <address> failed'],
+            ['DNS secret.example failed', 'DNS <target> failed'],
+            ['DNS secret.example. failed', 'DNS <target> failed'],
+            ['DNS other.example failed', 'Error'],
+            ['open /dev/ttyUSB9 failed', 'Error'],
+            ['DNS secret.example and other.example failed', 'Error'],
+            ['open /dev/ttyUSB0 and /dev/ttyUSB9 failed', 'Error'],
+            ['route 192.0.2.1 via otherhost failed', 'Error'],
+            ['endpoint otherhost failed', 'Error'],
+            ['endpoint other.example:1234 failed', 'Error'],
+        ]) {
+            expect(adapter.sanitizeTransportError(new Error(message)), message).to.equal(expected);
+        }
+    });
+
+    it('continues later watchdog cycles while reconnect-count publication is pending', async () => {
+        const adapter = harness();
+        let releaseReconnect;
+        adapter.setStateChangedAsync
+            .withArgs('info.reconnectCount')
+            .returns(new Promise(resolve => (releaseReconnect = resolve)));
+        for (let index = 0; index < 3; index++) {
+            adapter.lastOpenAttempt = 0;
+            await adapter.watchDog();
+        }
+        expect(adapter.com.open.callCount).to.equal(3);
+        expect(adapter.successfulOpenCount).to.equal(3);
+        expect(adapter.reconnectCount).to.equal(2);
+        releaseReconnect();
+        await flush();
+        await Promise.all([...adapter.stateQueues.values()]);
+    });
+
+    it('coalesces different timestamp attempts to the active and latest values only', async () => {
+        const adapter = harness();
+        let releaseFirst;
+        adapter.setStateChangedAsync
+            .withArgs('info.lastValidFrameAt')
+            .onFirstCall()
+            .returns(new Promise(resolve => (releaseFirst = resolve)));
+        adapter.lastValidFrameAt = 100000;
+        const first = adapter.publishLastValidFrame(true);
+        adapter.lastValidFrameAt = 101000;
+        const second = adapter.publishLastValidFrame(true);
+        adapter.lastValidFrameAt = 102000;
+        const third = adapter.publishLastValidFrame(true);
+        await flush();
+        expect(adapter.setStateChangedAsync.withArgs('info.lastValidFrameAt').callCount).to.equal(1);
+        releaseFirst();
+        await Promise.all([first, second, third]);
+        const values = adapter.setStateChangedAsync
+            .getCalls()
+            .filter(call => call.args[0] === 'info.lastValidFrameAt')
+            .map(call => call.args[1].val);
+        expect(values).to.deep.equal([100000, 102000]);
+        expect(adapter.lastValidFramePublishedAt).to.equal(102000);
+    });
+
+    it('uses the latest successfully written timestamp for throttling during an active drain', async () => {
+        const adapter = harness();
+        let releaseSecond;
+        adapter.setStateChangedAsync
+            .withArgs('info.lastValidFrameAt')
+            .onSecondCall()
+            .returns(new Promise(resolve => (releaseSecond = resolve)));
+        adapter.lastValidFrameAt = 100000;
+        const first = adapter.publishLastValidFrame(true);
+        adapter.lastValidFrameAt = 101000;
+        const second = adapter.publishLastValidFrame(true);
+        await flush();
+        expect(adapter.diagnosticPublishedValues.get('info.lastValidFrameAt')).to.equal(100000);
+        expect(adapter.lastValidFramePublishedAt).to.equal(0);
+
+        adapter.lastValidFrameAt = 102000;
+        await adapter.publishLastValidFrame();
+        expect(adapter.diagnosticEntries.get('info.lastValidFrameAt').latest).to.equal(101000);
+        releaseSecond();
+        await Promise.all([first, second]);
+        const values = adapter.setStateChangedAsync
+            .getCalls()
+            .filter(call => call.args[0] === 'info.lastValidFrameAt')
+            .map(call => call.args[1].val);
+        expect(values).to.deep.equal([100000, 101000]);
+    });
+
+    it('drains a trailing latest timestamp before finishing unload', async () => {
+        const adapter = harness();
+        let releaseFirst;
+        adapter.setStateChangedAsync
+            .withArgs('info.lastValidFrameAt')
+            .onFirstCall()
+            .returns(new Promise(resolve => (releaseFirst = resolve)));
+        adapter.lastValidFrameAt = 1000;
+        adapter.publishLastValidFrame(true);
+        adapter.lastValidFrameAt = 2000;
+        adapter.publishLastValidFrame(true);
+        const callback = sinon.stub();
+        adapter.onUnload(callback);
+        await flush();
+        releaseFirst();
+        await adapter.unloadPromise;
+        const values = adapter.setStateChangedAsync
+            .getCalls()
+            .filter(call => call.args[0] === 'info.lastValidFrameAt')
+            .map(call => call.args[1].val);
+        expect(values).to.deep.equal([1000, 2000]);
+        expect(callback.calledOnce).to.equal(true);
+    });
+
+    it('does not overwrite a real transport error during a planned close', async () => {
+        const { adapter } = serialHarness();
+        await adapter.onReady();
+        clearInterval(adapter.watchDogInterval);
+        adapter.watchDogInterval = undefined;
+        await adapter.activeWatchDog;
+        await adapter.recordTransportError(Object.assign(new Error('socket reset'), { code: 'ECONNRESET' }));
+        await adapter.com.close();
+        expect(adapter.lastTransportError).to.equal('ECONNRESET');
+        const values = adapter.setStateChangedAsync
+            .getCalls()
+            .filter(call => call.args[0] === 'info.lastTransportError')
+            .map(call => call.args[1].val);
+        expect(values).to.deep.equal(['ECONNRESET']);
     });
 });
 

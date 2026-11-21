@@ -18,6 +18,7 @@ Standardmäßig read-only ioBroker-Adapter für Victron-Geräte mit serieller VE
 - Admin-5-`jsonConfig` mit bedingten Seriell-/TCP-Feldern, nativer Speichervalidierung und echten Browser-Persistenztests.
 - PTY-/socat-Endpunkte ohne Modem-Control-Ioctl werden akzeptiert; andere Set-Fehler bleiben harte Open-Fehler.
 - `info.connection` folgt ausschließlich frischen gültigen Blöcken.
+- Read-only-Laufzeitdiagnostik für Transport, gedrosselten letzten gültigen Framezeitpunkt, erfolgreiche Reconnects, Parserfehler und maskierte Transportfehler; siehe [docs/runtime-diagnostics.md](docs/runtime-diagnostics.md).
 - Objekt-Migration vor State-Schreiben sowie behandelte Promise-Fehler.
 - Frame-Sampling ohne Verlust einzelner Protokollfelder.
 - Mehrinstanzfähigkeit ohne globale Ports, Parser, Timer oder Buffer.
