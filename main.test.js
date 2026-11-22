@@ -95,6 +95,7 @@ function hexHarness(options = {}) {
         cancel: sinon.stub(),
     };
     adapter.lastFrameTime = Date.now();
+    adapter.lastFrameMonotonic = adapter.monotonicNow();
     return adapter;
 }
 
@@ -436,7 +437,8 @@ describe('VE.Direct read-only runtime diagnostics', () => {
         await first.recordTransportOpen();
         await first.recordTransportOpen();
         await second.recordTransportOpen();
-        await first.recordParserError({ checksumErrors: 2, invalidFrames: 3, invalidHexMessages: 1 });
+        first.recordParserError({ checksumErrors: 2, invalidFrames: 3, invalidHexMessages: 1 });
+        await first.drainDiagnostics();
         expect(first.reconnectCount).to.equal(1);
         expect(second.reconnectCount).to.equal(0);
         expect(first.setStateChangedAsync.calledWith('info.checksumErrors', { val: 2, ack: true })).to.equal(true);
@@ -647,6 +649,39 @@ describe('VE.Direct read-only runtime diagnostics', () => {
         expect(values).to.deep.equal([100000, 101000]);
     });
 
+    it('reuses pending timestamp and parser drains without per-event Promise observers', async () => {
+        const adapter = harness();
+        let release;
+        const pending = new Promise(resolve => (release = resolve));
+        adapter.setStateChangedAsync.returns(pending);
+        adapter.lastValidFrameAt = 1000;
+        adapter.publishLastValidFrame(true);
+        const operation = adapter.lastValidFrameOperationSequence;
+        for (let index = 1; index <= 5000; index++) {
+            adapter.lastValidFrameAt = 1000 + index;
+            adapter.publishLastValidFrame(true);
+            adapter.recordParserError({ checksumErrors: index, invalidFrames: index, invalidHexMessages: 0 });
+        }
+        expect(adapter.lastValidFrameOperationSequence).to.equal(operation);
+        expect(adapter.diagnosticDrains.size).to.equal(3);
+        release();
+        await adapter.drainDiagnostics();
+    });
+
+    it('continues close and open when the info.connection write hangs', async () => {
+        const adapter = harness();
+        let release;
+        adapter.setStateAsync.withArgs('info.connection').returns(new Promise(resolve => (release = resolve)));
+        adapter.com.isOpen.returns(true);
+        await adapter.watchDog();
+        expect(adapter.com.close.calledOnce).to.equal(true);
+        expect(adapter.com.open.calledOnce).to.equal(true);
+        expect(adapter.activeWatchDog).to.equal(undefined);
+        expect(adapter.connectionRequested).to.equal(false);
+        release();
+        await Promise.all([...adapter.stateQueues.values()]);
+    });
+
     it('drains a trailing latest timestamp before finishing unload', async () => {
         const adapter = harness();
         let releaseFirst;
@@ -844,6 +879,24 @@ describe('VE.Direct watchdog and parser integration', () => {
         expect(adapter.connectionState).to.equal(false);
     });
 
+    it('uses monotonic time for freshness and reconnect cooldown after wall-clock regression', async () => {
+        const adapter = harness();
+        adapter.lastFrameTime = 100000;
+        adapter.lastFrameMonotonic = 1000;
+        adapter.lastOpenAttempt = 100000;
+        adapter.lastOpenAttemptMonotonic = 1000;
+        adapter.monotonicNow = () => 11001;
+        const clock = sinon.stub(Date, 'now').returns(90000);
+        try {
+            expect(adapter.isFresh()).to.equal(false);
+            expect(adapter.canPublishFrame(0, 100000, 1000)).to.equal(false);
+            await adapter.watchDog();
+            expect(adapter.com.open.calledOnce).to.equal(true);
+        } finally {
+            clock.restore();
+        }
+    });
+
     it('deduplicates overlapping watchdog operations', async () => {
         const adapter = harness();
         let release;
@@ -894,11 +947,14 @@ describe('VE.Direct adapter over the real serial lifecycle', () => {
     function useFakeClock() {
         clock = sinon.useFakeTimers({
             now: 100000,
-            toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date'],
+            toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date', 'performance'],
         });
     }
 
     async function startAdapter(adapter) {
+        if (clock) {
+            adapter.monotonicNow = () => clock.now;
+        }
         await adapter.onReady();
         clearInterval(adapter.watchDogInterval);
         adapter.watchDogInterval = undefined;
@@ -1107,6 +1163,29 @@ describe('VE.Direct configuration and unload', () => {
         adapter.onUnload(callback);
         await adapter.unloadPromise;
         expect(callback.calledOnce).to.equal(true);
+    });
+
+    it('does not resume startup work when control-object initialization settles after unload', async () => {
+        const adapter = harness();
+        adapter.unloadTimeoutMs = 20;
+        adapter.config.hexReadEnabled = true;
+        let releaseInit;
+        adapter.initControlObjects = sinon.stub().returns(new Promise(resolve => (releaseInit = resolve)));
+        adapter.handleReady();
+        await flush();
+        const callback = sinon.stub();
+        adapter.onUnload(callback);
+        await adapter.unloadPromise;
+        expect(callback.calledOnce).to.equal(true);
+        const writesBefore = adapter.setStateAsync.callCount + adapter.setStateChangedAsync.callCount;
+        releaseInit();
+        await adapter.readyPromise;
+        await flush();
+        expect(adapter.setStateAsync.callCount + adapter.setStateChangedAsync.callCount).to.equal(writesBefore);
+        expect(adapter.subscribeStatesAsync.called).to.equal(false);
+        expect(adapter.hexClient).to.equal(undefined);
+        expect(adapter.com.onValidFrame).to.equal(undefined);
+        expect(adapter.com.onPortClosed).to.equal(undefined);
     });
 
     it('invokes each registered unload callback exactly once', async () => {
@@ -1370,8 +1449,8 @@ describe('VE.Direct validated HEX adapter integration', () => {
         adapter.hexClient.setField.withArgs('chargeCurrentLimit', 12.3).resolves(12.3);
         await adapter.performStateChange('vedirect.0.control.chargeCurrentLimit', { val: 12.3, ack: false });
         expect(adapter.hexClient.setField.getCalls().map(call => call.args)).to.deep.equal([
-            ['networkMode', 5],
             ['chargeCurrentLimit', 12.3],
+            ['networkMode', 5],
         ]);
         expect(adapter.desiredCurrentLimit).to.equal(12.3);
         expect(adapter.currentLimitActive).to.equal(true);
@@ -1396,19 +1475,32 @@ describe('VE.Direct validated HEX adapter integration', () => {
         await expect(adapter.applyCurrentLimit(12.3)).to.be.rejectedWith('differs');
         expect(adapter.currentLimitActive).to.equal(false);
         expect(adapter.currentLimitTimer).to.equal(undefined);
+        expect(adapter.hexClient.setField.withArgs('networkMode').called).to.equal(false);
         expect(adapter.setStateAsync.calledWith('control.currentLimitActive', { val: true, ack: true })).to.equal(
             false,
         );
 
+        adapter.hexClient.setField.withArgs('chargeCurrentLimit', 12.3).resolves(12.3);
         adapter.hexClient.setField.withArgs('networkMode', 5).resolves('standalone');
         await expect(adapter.applyCurrentLimit(12.3)).to.be.rejectedWith('expected external');
     });
 
+    it('never enables external control when the current-limit Set itself fails', async () => {
+        const adapter = make();
+        adapter.hexClient.setField.withArgs('chargeCurrentLimit', 10).rejects(new Error('current write failed'));
+        await expect(adapter.applyCurrentLimit(10)).to.be.rejectedWith('current write failed');
+        expect(adapter.hexClient.setField.withArgs('networkMode').called).to.equal(false);
+        expect(adapter.currentLimitActive).to.equal(false);
+        expect(adapter.currentLimitTimer).to.equal(undefined);
+    });
+
     it('bounds rapid current changes to one pending adapter operation', async () => {
         const adapter = make();
-        let releaseMode;
-        adapter.hexClient.setField.withArgs('networkMode', 5).returns(new Promise(resolve => (releaseMode = resolve)));
-        adapter.hexClient.setField.withArgs('chargeCurrentLimit', 12.3).resolves(12.3);
+        let releaseCurrent;
+        adapter.hexClient.setField
+            .withArgs('chargeCurrentLimit', 12.3)
+            .returns(new Promise(resolve => (releaseCurrent = resolve)));
+        adapter.hexClient.setField.withArgs('networkMode', 5).resolves('external');
         const first = adapter.performStateChange('vedirect.0.control.chargeCurrentLimit', {
             val: 12.3,
             ack: false,
@@ -1417,7 +1509,7 @@ describe('VE.Direct validated HEX adapter integration', () => {
         await expect(
             adapter.performStateChange('vedirect.0.control.chargeCurrentLimit', { val: 10, ack: false }),
         ).to.be.rejectedWith('still pending');
-        releaseMode('external');
+        releaseCurrent(12.3);
         await first;
         expect(adapter.desiredCurrentLimit).to.equal(12.3);
         expect(adapter.hexClient.setField.withArgs('chargeCurrentLimit', 10).called).to.equal(false);
@@ -1440,21 +1532,21 @@ describe('VE.Direct validated HEX adapter integration', () => {
         expect(adapter.hexClient.getField.withArgs('deviceMode').called).to.equal(false);
     });
 
-    it('prevents a current Set when disconnect wins after network-mode state publication', async () => {
+    it('prevents an external-mode Set when disconnect wins after current-limit state publication', async () => {
         const adapter = make();
         adapter.hexClient.setField.withArgs('networkMode', 5).resolves('external');
         adapter.hexClient.setField.withArgs('chargeCurrentLimit', 10).resolves(10);
-        let releaseNetworkState;
+        let releaseCurrentState;
         adapter.setStateAsync
-            .withArgs('control.networkMode')
-            .returns(new Promise(resolve => (releaseNetworkState = resolve)));
+            .withArgs('control.chargeCurrentLimit')
+            .returns(new Promise(resolve => (releaseCurrentState = resolve)));
         const applying = adapter.applyCurrentLimit(10);
         const assertion = expect(applying).to.be.rejectedWith('unchanged open session');
         await flush();
         await adapter.safeSetConnectionState(false);
-        releaseNetworkState();
+        releaseCurrentState();
         await assertion;
-        expect(adapter.hexClient.setField.withArgs('chargeCurrentLimit').called).to.equal(false);
+        expect(adapter.hexClient.setField.withArgs('networkMode').called).to.equal(false);
         expect(adapter.currentLimitActive).to.equal(false);
     });
 
@@ -1540,18 +1632,20 @@ describe('VE.Direct validated HEX adapter integration', () => {
         expect(callback.calledOnce).to.equal(true);
     });
 
-    it('does not start the current Set when unload wins after network-mode readback', async () => {
+    it('does not start the external-mode Set when unload wins after current-limit readback', async () => {
         const adapter = make();
-        let releaseMode;
-        adapter.hexClient.setField.withArgs('networkMode', 5).returns(new Promise(resolve => (releaseMode = resolve)));
+        let releaseCurrent;
+        adapter.hexClient.setField
+            .withArgs('chargeCurrentLimit', 10)
+            .returns(new Promise(resolve => (releaseCurrent = resolve)));
         const applying = adapter.applyCurrentLimit(10);
         const assertion = expect(applying).to.be.rejectedWith('unloading');
         await flush();
         adapter.onUnload(() => undefined);
         await adapter.unloadPromise;
-        releaseMode('external');
+        releaseCurrent(10);
         await assertion;
-        expect(adapter.hexClient.setField.withArgs('chargeCurrentLimit').called).to.equal(false);
+        expect(adapter.hexClient.setField.withArgs('networkMode').called).to.equal(false);
         expect(adapter.currentLimitActive).to.equal(false);
         expect(adapter.currentLimitTimer).to.equal(undefined);
     });

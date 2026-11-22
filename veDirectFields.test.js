@@ -71,6 +71,15 @@ describe('VE.Direct field conversion', () => {
         expect(decodeVeDirectField('HSDS', '226')).to.deep.equal({ HSDS: 226 });
     });
 
+    it('rejects unsafe TEXT integers and unsafe scaled magnitudes instead of silently rounding', () => {
+        for (const id of ['H9', 'H19', 'V']) {
+            expect(() => decodeVeDirectField(id, '9007199254740993'), id).to.throw('Invalid numeric value');
+        }
+        expect(() => decodeVeDirectField('H19', '9007199254740992')).to.throw('Invalid numeric value');
+        expect(decodeVeDirectField('H9', '172800')).to.deep.equal({ H9: 172800 });
+        expect(decodeVeDirectField('V', '13118')).to.deep.equal({ V: 13.118 });
+    });
+
     it('keeps TTG in minutes and represents infinite and unavailable values explicitly', () => {
         expect(decodeVeDirectField('TTG', '240')).to.deep.equal({ TTG: 240, TTGInfinite: false });
         expect(VE_DIRECT_FIELDS.TTG.unit).to.equal('Minutes');

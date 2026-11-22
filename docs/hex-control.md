@@ -76,10 +76,12 @@ Dies ist ein Software-Schalter, keine elektrische Trennung und kein Load-/Relais
 
 Ein beschreibbarer Wert muss numerisch, endlich, innerhalb `0..currentLimitMax` und exakt in 0,1-A-Schritten darstellbar sein. Feinere Werte werden abgelehnt statt gerundet.
 
-Vor dem ersten Set muss das Gerät External-Control-Capability besitzen. Der Adapter schreibt und verifiziert:
+Vor dem ersten Set muss das Gerät External-Control-Capability besitzen. Der Adapter schreibt und verifiziert in dieser Reihenfolge:
 
-- Network Mode External Control (`0x200E = 0x05`),
-- Charge Current Limit (`0x2015`).
+1. Charge Current Limit (`0x2015`) mit Set-Echo und Get-Readback,
+2. Network Mode External Control (`0x200E = 0x05`) mit Readback.
+
+Ein Fehler beim Stromlimit aktiviert External-Control daher nie; es wird auch kein ambivalenter Rollback-Schreibzugriff versucht. Erst nach beiden verifizierten Werten startet der lokale Supervisor.
 
 Anschließend startet der lokale Supervisor und erneuert beide Werte samt Readbacks im konfigurierten Intervall. Das wirksame Geräte-Limit ist zusätzlich durch das persistente `0xEDF0` begrenzt.
 
