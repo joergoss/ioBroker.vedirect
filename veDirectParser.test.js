@@ -696,6 +696,43 @@ describe('VE.Direct byte parser', () => {
         ]);
     });
 
+    it('recovers fresh blocks after HEX interrupts every partial checksum-label prefix', () => {
+        const label = Buffer.from('Checksum\t', 'ascii');
+        for (let cut = 0; cut < label.length; cut++) {
+            const parser = new VeDirectParser();
+            const frames = collect(parser);
+            const body = Buffer.from('\r\nV\t13118\r\nChecksum\t', 'ascii');
+            let sum = 0;
+            for (const byte of body) {
+                sum = (sum + byte) & 0xff;
+            }
+            const checksum = Buffer.from([(256 - sum) & 0xff]);
+            const prefix = body.subarray(0, body.length - label.length + cut);
+            const remainder = Buffer.concat([body.subarray(prefix.length), checksum]);
+            const firstFresh = makeFrame([['H4', '3']]);
+            const secondFresh = makeFrame([['H5', '4']]);
+            parser.receive(
+                Buffer.concat([prefix, Buffer.from(':A0102000543\n', 'ascii'), remainder, firstFresh, secondFresh]),
+            );
+            expect(frames, `checksum label cut ${cut}`).to.deep.equal([{ H4: 3 }, { H5: 4 }]);
+        }
+    });
+
+    it('rejects non-ASCII TEXT bytes instead of folding them into valid digits', () => {
+        const parser = new VeDirectParser();
+        const frames = collect(parser);
+        const body = Buffer.from('\r\nV\t13118\r\nChecksum\t', 'ascii');
+        body[4] = 0xb1;
+        let sum = 0;
+        for (const byte of body) {
+            sum = (sum + byte) & 0xff;
+        }
+        parser.receive(Buffer.concat([body, Buffer.from([(256 - sum) & 0xff])]));
+        expect(frames).to.deep.equal([]);
+        expect(parser.invalidFrames).to.equal(1);
+        expect(parser.checksumErrors).to.equal(0);
+    });
+
     it('reports cumulative checksum, parser and HEX rejection counters at their real events', () => {
         const parser = new VeDirectParser();
         const events = [];

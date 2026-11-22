@@ -123,7 +123,7 @@ npm ci
 npm run test:all
 ```
 
-`test:all` umfasst die fachliche Suite, Package-Checks, `checkJs`, ESLint und js-controller-Integration. Die CI-Matrix verwendet Node.js 22/24/26 auf Linux, Windows und macOS.
+`test:all` umfasst die fachliche Suite, Package-Checks, `checkJs`, ESLint, js-controller-Integration und den kurzen TCP-Reconnect-/Ressourcen-Soak. Die CI-Matrix verwendet Node.js 22/24/26 auf Linux, Windows und macOS.
 
 `npm run test:admin` prüft die echte Admin-5-Konfiguration in Chrome mit Admin 7.6.20 und js-controller 6.0.11, einschließlich bedingter Felder, Validierung, Speichern, Reload und versteckter nativer Werte. Details stehen in [docs/admin-jsonconfig.md](docs/admin-jsonconfig.md).
 
@@ -133,7 +133,7 @@ Der vollständige Audit steht in [docs/audit-2026-11-17.md](docs/audit-2026-11-1
 
 ## Dependency-Audit
 
-Der Produktions-Audit ist ohne Befund. Im Entwicklungs-Toolchain-Audit verbleibt eine transitive `picomatch`-ReDoS-Meldung über `tinyglobby`/TypeScript-ESLint, für die zum Prüfzeitpunkt keine korrigierte kompatible Release-Kette verfügbar ist. Sie betrifft ausschließlich Entwicklungs-Globbing mit potenziell bösartigen Patterns, nicht den Adapterbetrieb oder die VE.Direct-Verarbeitung.
+Stand 2026-11-22 melden sowohl der Produktions-Audit als auch der vollständige Entwicklungs-Toolchain-Audit keine bekannten Sicherheitslücken. Dies ist ein zeitpunktbezogenes Ergebnis und keine Garantie gegenüber zukünftigen Advisories.
 
 ## Changelog
 

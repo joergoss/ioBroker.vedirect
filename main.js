@@ -1,6 +1,7 @@
 'use strict';
 
 const net = require('node:net');
+const { performance } = require('node:perf_hooks');
 const utils = require('@iobroker/adapter-core');
 const { VeDirectCom } = require('./lib/veDirectCom');
 const { normalizeTcpTarget } = require('./lib/veDirectTcpPort');
@@ -45,6 +46,8 @@ class Vedirect extends utils.Adapter {
         this.expireSeconds = 0;
         this.samplingSeconds = 0;
         this.lastFrameTime = 0;
+        this.lastFrameMonotonic = 0;
+        this.lastOpenAttemptMonotonic = 0;
         this.lastValidFrameAt = 0;
         this.lastValidFramePublishedAt = 0;
         this.lastValidFrameOperationSequence = 0;
@@ -164,7 +167,13 @@ class Vedirect extends utils.Adapter {
             encodeRaw('chargeCurrentLimit', this.currentLimitMax);
         }
         await this.initControlObjects();
+        if (this.unloaded) {
+            return;
+        }
         await this.writeState('control.currentLimitActive', false);
+        if (this.unloaded) {
+            return;
+        }
         if (this.hexReadEnabled) {
             const { VeDirectHexClient } = require('./lib/veDirectHexClient');
             this.hexClient = new VeDirectHexClient(this.com);
@@ -178,8 +187,14 @@ class Vedirect extends utils.Adapter {
                 await this.subscribeStatesAsync('control.*');
             }
         }
+        if (this.unloaded) {
+            return;
+        }
         if (!this.configureConnectionTarget()) {
             this.log.error('Configure a valid VE.Direct serial port before starting the adapter');
+            return;
+        }
+        if (this.unloaded) {
             return;
         }
 
@@ -188,6 +203,7 @@ class Vedirect extends utils.Adapter {
                 return;
             }
             this.lastFrameTime = Date.now();
+            this.lastFrameMonotonic = this.monotonicNow();
             this.lastValidFrameAt = this.lastFrameTime;
             void this.publishLastValidFrame();
             void this.safeSetConnectionState(true);
@@ -343,6 +359,12 @@ class Vedirect extends utils.Adapter {
         if (!force && timestamp - lastPublished < DIAGNOSTIC_FRAME_PUBLISH_MS) {
             return Promise.resolve();
         }
+        if (this.lastValidFramePublishOperation !== 0) {
+            // Reuse the one existing completion observer. Only the latest value
+            // is queued; no additional Promise observer is created per frame.
+            void this.writeDiagnosticState('info.lastValidFrameAt', timestamp);
+            return this.diagnosticDrains.get('info.lastValidFrameAt') || Promise.resolve();
+        }
         const operation = ++this.lastValidFrameOperationSequence;
         this.lastValidFramePublishOperation = operation;
         return this.writeDiagnosticState('info.lastValidFrameAt', timestamp).then(success => {
@@ -444,11 +466,11 @@ class Vedirect extends utils.Adapter {
         return error instanceof Error && error.name ? error.name : 'Error';
     }
 
-    async recordParserError(counters) {
-        await Promise.all([
-            this.writeDiagnosticState('info.checksumErrors', counters.checksumErrors),
-            this.writeDiagnosticState('info.parserErrors', counters.invalidFrames + counters.invalidHexMessages),
-        ]);
+    recordParserError(counters) {
+        // Both writes reuse their existing drain. Do not create Promise.all()
+        // observers for every parser event while a database write is pending.
+        void this.writeDiagnosticState('info.checksumErrors', counters.checksumErrors);
+        void this.writeDiagnosticState('info.parserErrors', counters.invalidFrames + counters.invalidHexMessages);
     }
 
     async initConnectionObject() {
@@ -630,8 +652,13 @@ class Vedirect extends utils.Adapter {
         return number;
     }
 
+    monotonicNow() {
+        return performance.now();
+    }
+
     isFresh() {
-        return this.lastFrameTime > 0 && Date.now() - this.lastFrameTime < DATA_TIMEOUT_MS;
+        const age = this.monotonicNow() - this.lastFrameMonotonic;
+        return this.lastFrameTime > 0 && this.lastFrameMonotonic > 0 && age >= 0 && age < DATA_TIMEOUT_MS;
     }
 
     watchDog() {
@@ -656,15 +683,22 @@ class Vedirect extends utils.Adapter {
         if (this.isFresh() && this.com.isOpen() && this.connectionRequested !== false) {
             return;
         }
-        await this.safeSetConnectionState(false);
+        await this.safeSetConnectionState(false, false);
         if (this.unloaded || (this.isFresh() && this.com.isOpen() && this.connectionRequested !== false)) {
             return;
         }
-        const now = Date.now();
-        if (now - this.lastOpenAttempt < RECONNECT_COOLDOWN_MS) {
+        const now = this.monotonicNow();
+        const cooldownAge = now - this.lastOpenAttemptMonotonic;
+        if (
+            this.lastOpenAttempt > 0 &&
+            this.lastOpenAttemptMonotonic > 0 &&
+            cooldownAge >= 0 &&
+            cooldownAge < RECONNECT_COOLDOWN_MS
+        ) {
             return;
         }
-        this.lastOpenAttempt = now;
+        this.lastOpenAttempt = Date.now();
+        this.lastOpenAttemptMonotonic = now;
         try {
             if (this.com.isOpen()) {
                 await this.com.close();
@@ -718,6 +752,7 @@ class Vedirect extends utils.Adapter {
             values: { ...((previous && previous.values) || {}), ...frame },
             generation: this.connectionGeneration,
             receivedAt: Date.now(),
+            monotonicReceivedAt: this.monotonicNow(),
         };
         this.startFrameDrain();
     }
@@ -743,7 +778,7 @@ class Vedirect extends utils.Adapter {
             const batch = this.pendingFrameBatch;
             this.pendingFrameBatch = null;
             try {
-                await this.publishFrame(batch.values, batch.generation, batch.receivedAt);
+                await this.publishFrame(batch.values, batch.generation, batch.receivedAt, batch.monotonicReceivedAt);
             } catch (error) {
                 this.logThrottled('Could not process VE.Direct frame: ', error);
             }
@@ -758,21 +793,31 @@ class Vedirect extends utils.Adapter {
         this.pendingSample = null;
     }
 
-    canPublishFrame(generation, receivedAt) {
+    canPublishFrame(generation, receivedAt, monotonicReceivedAt = this.monotonicNow()) {
+        const wallAge = Date.now() - receivedAt;
+        const monotonicAge = this.monotonicNow() - monotonicReceivedAt;
         return (
             !this.unloaded &&
             this.connectionRequested !== false &&
             generation === this.connectionGeneration &&
-            Date.now() - receivedAt < DATA_TIMEOUT_MS
+            wallAge >= 0 &&
+            wallAge < DATA_TIMEOUT_MS &&
+            monotonicAge >= 0 &&
+            monotonicAge < DATA_TIMEOUT_MS
         );
     }
 
-    async publishFrame(frame, generation = this.connectionGeneration, receivedAt = Date.now()) {
-        if (!this.canPublishFrame(generation, receivedAt)) {
+    async publishFrame(
+        frame,
+        generation = this.connectionGeneration,
+        receivedAt = Date.now(),
+        monotonicReceivedAt = this.monotonicNow(),
+    ) {
+        if (!this.canPublishFrame(generation, receivedAt, monotonicReceivedAt)) {
             return;
         }
         for (const [key, value] of Object.entries(frame)) {
-            if (!this.canPublishFrame(generation, receivedAt)) {
+            if (!this.canPublishFrame(generation, receivedAt, monotonicReceivedAt)) {
                 return;
             }
             const field = VE_DIRECT_FIELDS[key];
@@ -781,7 +826,7 @@ class Vedirect extends utils.Adapter {
             }
             try {
                 await this.ensureStateObject(field);
-                if (!this.canPublishFrame(generation, receivedAt)) {
+                if (!this.canPublishFrame(generation, receivedAt, monotonicReceivedAt)) {
                     return;
                 }
                 await this.writeState(key, value, field);
@@ -968,19 +1013,22 @@ class Vedirect extends utils.Adapter {
         const client = this.hexClient;
         await this.ensureExternalControlCapability(generation);
         this.assertControlSession(generation);
-        const mode = await client.setField('networkMode', NETWORK_MODES.external);
-        this.assertControlSession(generation);
-        if (mode !== 'external') {
-            throw new Error(`Network mode readback is ${String(mode)}, expected external`);
-        }
-        await this.writeState('control.networkMode', mode);
-        this.assertControlSession(generation);
+        // Establish and verify the actual limit before enabling external control.
+        // A failed limit therefore never leaves the device externally controlled;
+        // no ambiguous rollback write is needed or attempted.
         const actual = await client.setField('chargeCurrentLimit', value);
         this.assertControlSession(generation);
         if (typeof actual !== 'number' || actual !== value) {
             throw new Error(`Charge current readback ${actual} A differs from requested ${value} A`);
         }
         await this.writeState('control.chargeCurrentLimit', actual);
+        this.assertControlSession(generation);
+        const mode = await client.setField('networkMode', NETWORK_MODES.external);
+        this.assertControlSession(generation);
+        if (mode !== 'external') {
+            throw new Error(`Network mode readback is ${String(mode)}, expected external`);
+        }
+        await this.writeState('control.networkMode', mode);
         this.assertControlSession(generation);
         this.desiredCurrentLimit = actual;
         this.currentLimitActive = true;
@@ -1064,7 +1112,7 @@ class Vedirect extends utils.Adapter {
         }
     }
 
-    async safeSetConnectionState(connected) {
+    async safeSetConnectionState(connected, awaitStateWrite = true) {
         if (!connected) {
             this.clearPendingSample();
             this.pendingFrameBatch = null;
@@ -1081,7 +1129,14 @@ class Vedirect extends utils.Adapter {
                 this.hexClient.cancel(new Error('VE.Direct connection lost'));
             }
             if (supervisorWasActive) {
-                await this.writeState('control.currentLimitActive', false);
+                const supervisorWrite = this.writeState('control.currentLimitActive', false);
+                if (awaitStateWrite) {
+                    await supervisorWrite;
+                } else {
+                    void supervisorWrite.catch(error => {
+                        this.logThrottled('Could not deactivate current-limit supervisor: ', error);
+                    });
+                }
             }
             if (this.connectionRequested !== false) {
                 this.connectionGeneration++;
@@ -1094,20 +1149,32 @@ class Vedirect extends utils.Adapter {
             return;
         }
         this.connectionRequested = connected;
+        const onError = error => {
+            if (this.connectionRequested === connected) {
+                this.connectionRequested = undefined;
+            }
+            this.logThrottled('Could not update info.connection: ', error);
+        };
         try {
             const connectionWrite = this.writeState('info.connection', connected);
             if (!connected) {
+                this.connectionState = false;
                 void this.publishLastValidFrame(true);
+            }
+            if (!awaitStateWrite) {
+                void connectionWrite.then(() => {
+                    if (this.connectionRequested === connected) {
+                        this.connectionState = connected;
+                    }
+                }, onError);
+                return;
             }
             await connectionWrite;
             if (this.connectionRequested === connected) {
                 this.connectionState = connected;
             }
         } catch (error) {
-            if (this.connectionRequested === connected) {
-                this.connectionRequested = undefined;
-            }
-            this.logThrottled('Could not update info.connection: ', error);
+            onError(error);
         }
     }
 
